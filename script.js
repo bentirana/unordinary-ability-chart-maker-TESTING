@@ -25,7 +25,7 @@ const fixedCenterPlugin = {
     
     if (opt.centerX && opt.centerY) {
       r.xCenter = opt.centerX;
-      r.yCenter = opt.centerY;
+      r.yCenter = opt.yCenter;
     }
     
     r.drawingArea *= CHART_SCALE_FACTOR;
@@ -50,7 +50,8 @@ const radarBackgroundPlugin = {
     // Radial Gradient (Fill)
     const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
     gradient.addColorStop(0, '#f8fcff');
-    gradient.addColorStop(0.25, '#92dfec');
+    // CHANGE: Gradient transition moved to 33%
+    gradient.addColorStop(0.33, '#92dfec'); 
     gradient.addColorStop(1, '#92dfec');
     
     ctx.save();
@@ -125,8 +126,8 @@ const outlinedLabelsPlugin = {
     const cx = r.xCenter;
     const cy = r.yCenter;
     
-    // Adjust label radius for better positioning outside the chart area
-    const radius = r.drawingArea * 1.05 + 15; 
+    // CHANGE: Adjusted label radius (increased 15 to 25) for better spacing
+    const radius = r.drawingArea * 1.05 + 25; 
     const base = -Math.PI / 2;
     
     ctx.save();
@@ -240,7 +241,8 @@ updateBtn.addEventListener('click', () => {
   const capped = vals.map(v => Math.min(v, 10)); 
   
   chartColor = colorPicker.value;
-  const fill = hexToRGBA(chartColor, 0.75);
+  // CHANGE: Opacity updated to 0.65
+  const fill = hexToRGBA(chartColor, 0.65); 
 
   // Update Chart 1 (Main) with uncapped values
   radar1.data.datasets[0].data = vals;
@@ -309,7 +311,8 @@ viewBtn.addEventListener('click', () => {
       +defenseInput.value || 0
     ].map(v => Math.min(v, 10));
 
-    const fill = hexToRGBA(chartColor, 0.75);
+    // CHANGE: Opacity updated to 0.65
+    const fill = hexToRGBA(chartColor, 0.65);
     radar2.data.datasets[0].data = vals;
     radar2.data.datasets[0].borderColor = chartColor;
     radar2.data.datasets[0].backgroundColor = fill;
@@ -327,7 +330,8 @@ downloadBtn.addEventListener('click', () => {
   // Use html2canvas to capture the characterBox
   html2canvas(characterBox, { scale: 2 }).then(canvas => {
     const link = document.createElement('a');
-    link.download = (nameInput.value || 'UnOrdinary_Character') + '_chart.png';
+    // CHANGE: Updated download filename format
+    link.download = (nameInput.value || 'UnOrdinary_Character') + '_characterChart.png'; 
     link.href = canvas.toDataURL('image/png');
     link.click();
     
