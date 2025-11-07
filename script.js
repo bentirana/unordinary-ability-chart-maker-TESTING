@@ -1,8 +1,8 @@
 let chartColor = '#92dfec';
 let radar1, radar2;
 
-// initialize chart 1
-function makeChart1(ctx) {
+// create chart function (shared)
+function makeRadar(ctx, maxCap = null, showPoints = true) {
   return new Chart(ctx, {
     type: 'radar',
     data: {
@@ -14,18 +14,19 @@ function makeChart1(ctx) {
         borderWidth: 2,
         pointBackgroundColor: '#fff',
         pointBorderColor: '#92dfec',
-        pointRadius: 5
+        pointRadius: showPoints ? 5 : 0
       }]
     },
     options: {
       scales: {
         r: {
-          angleLines: { color: '#6db5c0' },
-          grid: { color: '#184046' },
+          grid: { display: false },
+          angleLines: { color: '#6db5c0', lineWidth: 1 },
           suggestedMin: 0,
+          suggestedMax: maxCap ?? undefined,
           ticks: { display: false },
           pointLabels: {
-            color: '#fff',
+            color: () => chartColor,
             font: { family: 'Candara', style: 'italic', size: 16 }
           }
         }
@@ -36,47 +37,20 @@ function makeChart1(ctx) {
   });
 }
 
-// initialize chart 2
-function makeChart2(ctx) {
-  return new Chart(ctx, {
-    type: 'radar',
-    data: {
-      labels: ['Power', 'Speed', 'Trick', 'Recovery', 'Defense'],
-      datasets: [{
-        data: [0,0,0,0,0],
-        backgroundColor: 'rgba(146,223,236,0.75)',
-        borderColor: '#92dfec',
-        borderWidth: 2,
-        pointRadius: 0
-      }]
-    },
-    options: {
-      scales: {
-        r: {
-          angleLines: { color: '#6db5c0' },
-          grid: { color: '#184046' },
-          suggestedMin: 0,
-          suggestedMax: 10,
-          ticks: { display: false },
-          pointLabels: {
-            color: '#fff',
-            font: { family: 'Candara', style: 'italic', size: 16 }
-          }
-        }
-      },
-      plugins: { legend: { display: false } },
-      animation: { duration: 0 }
-    }
-  });
-}
-
-// load both charts
 window.addEventListener('load', () => {
-  radar1 = makeChart1(document.getElementById('radarChart1'));
-  radar2 = makeChart2(document.getElementById('radarChart2'));
+  radar1 = makeRadar(document.getElementById('radarChart1'));        // main chart
+  radar2 = makeRadar(document.getElementById('radarChart2'), 10, false); // capped chart
 });
 
-// update chart
+// helper
+function hexToRGBA(hex,alpha){
+  const r=parseInt(hex.slice(1,3),16),
+        g=parseInt(hex.slice(3,5),16),
+        b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// update both charts
 document.getElementById('updateBtn').addEventListener('click', () => {
   const vals = [
     parseFloat(power.value)||0,
@@ -102,18 +76,13 @@ document.getElementById('updateBtn').addEventListener('click', () => {
   radar2.data.datasets[0].backgroundColor = hexToRGBA(color,0.75);
   radar2.update();
 
-  // update info
   dispName.textContent = name.value || '-';
   dispAbility.textContent = ability.value || '-';
   dispLevel.textContent = level.value || '-';
 });
 
-// overlay behavior
+// overlay logic
 const overlay = document.getElementById('overlay');
-const viewBtn = document.getElementById('viewBtn');
-const closeBtn = document.getElementById('closeBtn');
-const downloadBtn = document.getElementById('downloadBtn');
-
 viewBtn.addEventListener('click', () => {
   overlay.classList.remove('hidden');
   overlayImg.src = uploadedImg.src;
@@ -121,9 +90,9 @@ viewBtn.addEventListener('click', () => {
   overlayAbility.textContent = ability.value || '-';
   overlayLevel.textContent = level.value || '-';
 });
-
 closeBtn.addEventListener('click', ()=>overlay.classList.add('hidden'));
 
+// download
 downloadBtn.addEventListener('click', ()=> {
   html2canvas(document.getElementById('characterBox')).then(canvas=>{
     const link=document.createElement('a');
@@ -141,11 +110,3 @@ imgInput.addEventListener('change', e=>{
   reader.onload = ev => { uploadedImg.src = ev.target.result; };
   reader.readAsDataURL(file);
 });
-
-// helper
-function hexToRGBA(hex,alpha){
-  const r=parseInt(hex.slice(1,3),16),
-        g=parseInt(hex.slice(3,5),16),
-        b=parseInt(hex.slice(5,7),16);
-  return `rgba(${r},${g},${b},${alpha})`;
-}
