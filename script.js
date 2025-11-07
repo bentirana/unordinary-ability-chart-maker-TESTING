@@ -5,30 +5,26 @@ let chartColor = '#92dfec';
 const CHART2_CENTER_DX = 0;
 const CHART2_CENTER_DY = 12;
 
-const nameInput = document.getElementById('nameInput');
-const abilityInput = document.getElementById('abilityInput');
-const levelInput = document.getElementById('levelInput');
-const powerInput = document.getElementById('powerInput');
-const speedInput = document.getElementById('speedInput');
-const trickInput = document.getElementById('trickInput');
-const recoveryInput = document.getElementById('recoveryInput');
-const defenseInput = document.getElementById('defenseInput');
-const colorPicker = document.getElementById('colorPicker');
+function hexToRGBA(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
-/* === Fix radar scale center === */
+/* === Center Fix === */
 const fixedCenterPlugin = {
   id: 'fixedCenter',
   afterLayout(chart) {
     const opt = chart.config.options.fixedCenter;
     if (!opt?.enabled) return;
-    const rScale = chart.scales.r;
-    if (!rScale) return;
-    rScale.xCenter += (opt.dx ?? 0);
-    rScale.yCenter += (opt.dy ?? 0);
+    const r = chart.scales.r;
+    r.xCenter += (opt.dx ?? 0);
+    r.yCenter += (opt.dy ?? 0);
   }
 };
 
-/* === Gradient pentagon background === */
+/* === Pentagon + Spokes === */
 const radarBackgroundPlugin = {
   id: 'customPentagonBackground',
   beforeDraw(chart) {
@@ -78,7 +74,7 @@ const radarBackgroundPlugin = {
   }
 };
 
-/* === Outlined axis labels === */
+/* === Outlined Axis Labels (No Cutoff) === */
 const outlinedLabelsPlugin = {
   id: 'outlinedLabels',
   afterDraw(chart) {
@@ -88,13 +84,14 @@ const outlinedLabelsPlugin = {
     const labels = chart.data.labels;
     const cx = r.xCenter;
     const cy = r.yCenter;
-    const radius = r.drawingArea + 20;
+
+    const radius = r.drawingArea + Math.max(30, r.drawingArea * 0.12);
     const base = -Math.PI / 2;
 
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = 'italic 16px Candara';
+    ctx.font = 'italic 18px Candara';
     ctx.lineWidth = 4;
     ctx.strokeStyle = chartColor;
     ctx.fillStyle = 'white';
@@ -103,14 +100,15 @@ const outlinedLabelsPlugin = {
       const angle = base + (i * 2 * Math.PI / labels.length);
       const x = cx + radius * Math.cos(angle);
       const y = cy + radius * Math.sin(angle);
-      ctx.strokeText(label, x, y);
-      ctx.fillText(label, x, y);
+      const yAdjusted = y + (Math.sin(angle) > 0.8 ? 10 : 0);
+      ctx.strokeText(label, x, yAdjusted);
+      ctx.fillText(label, x, yAdjusted);
     });
     ctx.restore();
   }
 };
 
-/* === Chart factory === */
+/* === Create Chart === */
 function makeRadar(ctx, maxCap = null, showPoints = true, withBackground = false, fixed = false) {
   return new Chart(ctx, {
     type: 'radar',
@@ -148,20 +146,13 @@ function makeRadar(ctx, maxCap = null, showPoints = true, withBackground = false
   });
 }
 
-/* === Init Chart 1 === */
+/* === Chart 1 (main) === */
 window.addEventListener('load', () => {
   const ctx1 = document.getElementById('radarChart1').getContext('2d');
   radar1 = makeRadar(ctx1, null, true, false, false);
 });
 
-function hexToRGBA(hex, alpha) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-
-/* === Update Charts === */
+/* === Update Data === */
 document.getElementById('updateBtn').addEventListener('click', () => {
   const vals = [
     parseFloat(powerInput.value) || 0,
@@ -233,3 +224,22 @@ closeBtn.addEventListener('click', () => overlay.classList.add('hidden'));
 downloadBtn.addEventListener('click', () => {
   const btn = document.getElementById('downloadBtn');
   btn.style.display = 'none';
+  html2canvas(document.getElementById('characterBox')).then(canvas => {
+    const link = document.createElement('a');
+    link.download = 'character_chart.png';
+    link.href = canvas.toDataURL();
+    link.click();
+    btn.style.display = ''; // restore after capture
+  });
+});
+
+/* === Image Upload === */
+document.getElementById('imgInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('uploadedImg').src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
