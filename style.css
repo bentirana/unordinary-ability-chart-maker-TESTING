@@ -78,6 +78,7 @@ button {
   margin-top: 10px;
   padding: 6px 10px;
   font-family: Candara;
+  font-weight: bold;
   background-color: #92dfec;
   border: none;
   border-radius: 6px;
@@ -142,13 +143,14 @@ button {
 
 .text-box {
   position: absolute;
-  bottom: -5px;
+  bottom: -50px;           /* overlap about 1/5 of image */
   width: 60%;
   background: white;
   border: 3px solid #493e3b;
   padding: 8px;
   font-family: Candara;
   text-align: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .overlay-chart {
