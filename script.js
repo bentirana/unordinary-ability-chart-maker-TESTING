@@ -2,10 +2,9 @@ let radar1, radar2;
 let radar2Ready = false;
 let chartColor = '#92dfec';
 
-// Center + size adjustments
 const CHART2_CENTER_DX = 0;
 const CHART2_CENTER_DY = 12;
-const CHART_SCALE_FACTOR = 0.80; // shrink chart more to ensure labels fit
+const CHART_SCALE_FACTOR = 0.8;
 
 function hexToRGBA(hex, alpha) {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -23,7 +22,7 @@ const fixedCenterPlugin = {
     const r = chart.scales.r;
     r.xCenter += (opt.dx ?? 0);
     r.yCenter += (opt.dy ?? 0);
-    r.drawingArea *= CHART_SCALE_FACTOR;  // shrink radius to avoid cutoff
+    r.drawingArea *= CHART_SCALE_FACTOR;
   }
 };
 
@@ -88,8 +87,7 @@ const outlinedLabelsPlugin = {
     const cx = r.xCenter;
     const cy = r.yCenter;
 
-    // Place labels comfortably away from the pentagon
-    const radius = r.drawingArea + Math.max(40, r.drawingArea * 0.18);
+    const radius = r.drawingArea + Math.max(50, r.drawingArea * 0.22);
     const base = -Math.PI / 2;
 
     ctx.save();
@@ -104,7 +102,7 @@ const outlinedLabelsPlugin = {
       const angle = base + (i * 2 * Math.PI / labels.length);
       const x = cx + radius * Math.cos(angle);
       const y = cy + radius * Math.sin(angle);
-      const yAdjusted = y + (Math.sin(angle) > 0.8 ? 10 : 0); // small bottom nudge
+      const yAdjusted = y + (Math.sin(angle) > 0.8 ? 10 : 0);
       ctx.strokeText(label, x, yAdjusted);
       ctx.fillText(label, x, yAdjusted);
     });
@@ -112,7 +110,7 @@ const outlinedLabelsPlugin = {
   }
 };
 
-/* === Chart factory === */
+/* === Create Chart === */
 function makeRadar(ctx, maxCap = null, showPoints = true, withBackground = false, fixed = false) {
   return new Chart(ctx, {
     type: 'radar',
@@ -129,9 +127,10 @@ function makeRadar(ctx, maxCap = null, showPoints = true, withBackground = false
       }]
     },
     options: {
-      // Extra canvas margin so labels never clip at edges
+      responsive: false,
+      maintainAspectRatio: false,
       layout: {
-        padding: { top: 60, right: 60, bottom: 70, left: 60 }
+        padding: { top: 100, right: 100, bottom: 120, left: 100 }
       },
       scales: {
         r: {
@@ -146,9 +145,7 @@ function makeRadar(ctx, maxCap = null, showPoints = true, withBackground = false
       customBackground: { enabled: withBackground },
       outlinedLabels: { enabled: true },
       fixedCenter: { enabled: fixed, dx: CHART2_CENTER_DX, dy: CHART2_CENTER_DY },
-      plugins: { legend: { display: false } },
-      responsive: true,
-      maintainAspectRatio: false
+      plugins: { legend: { display: false } }
     },
     plugins: [fixedCenterPlugin, radarBackgroundPlugin, outlinedLabelsPlugin]
   });
@@ -160,18 +157,8 @@ window.addEventListener('load', () => {
   radar1 = makeRadar(ctx1, null, true, false, false);
 });
 
-/* === Update charts === */
+/* === Update button === */
 document.getElementById('updateBtn').addEventListener('click', () => {
-  const nameInput = document.getElementById('nameInput');
-  const abilityInput = document.getElementById('abilityInput');
-  const levelInput = document.getElementById('levelInput');
-  const powerInput = document.getElementById('powerInput');
-  const speedInput = document.getElementById('speedInput');
-  const trickInput = document.getElementById('trickInput');
-  const recoveryInput = document.getElementById('recoveryInput');
-  const defenseInput = document.getElementById('defenseInput');
-  const colorPicker = document.getElementById('colorPicker');
-
   const vals = [
     parseFloat(powerInput.value) || 0,
     parseFloat(speedInput.value) || 0,
@@ -207,12 +194,8 @@ const closeBtn = document.getElementById('closeBtn');
 const downloadBtn = document.getElementById('downloadBtn');
 
 viewBtn.addEventListener('click', () => {
-  const nameInput = document.getElementById('nameInput');
-  const abilityInput = document.getElementById('abilityInput');
-  const levelInput = document.getElementById('levelInput');
-
   overlay.classList.remove('hidden');
-  document.getElementById('overlayImg').src = document.getElementById('uploadedImg').src || '';
+  document.getElementById('overlayImg').src = document.getElementById('uploadedImg').src;
   document.getElementById('overlayName').textContent = nameInput.value || '-';
   document.getElementById('overlayAbility').textContent = abilityInput.value || '-';
   document.getElementById('overlayLevel').textContent = levelInput.value || '-';
@@ -223,12 +206,6 @@ viewBtn.addEventListener('click', () => {
       radar2 = makeRadar(ctx2, 10, false, true, true);
       radar2Ready = true;
     } else radar2.resize();
-
-    const powerInput = document.getElementById('powerInput');
-    const speedInput = document.getElementById('speedInput');
-    const trickInput = document.getElementById('trickInput');
-    const recoveryInput = document.getElementById('recoveryInput');
-    const defenseInput = document.getElementById('defenseInput');
 
     const vals = [
       parseFloat(powerInput.value) || 0,
@@ -248,16 +225,19 @@ viewBtn.addEventListener('click', () => {
 
 closeBtn.addEventListener('click', () => overlay.classList.add('hidden'));
 
-/* === Download without button === */
+/* === Download without buttons === */
 downloadBtn.addEventListener('click', () => {
   const btn = document.getElementById('downloadBtn');
+  const close = document.getElementById('closeBtn');
   btn.style.display = 'none';
+  close.style.display = 'none';
   html2canvas(document.getElementById('characterBox')).then(canvas => {
     const link = document.createElement('a');
     link.download = 'character_chart.png';
     link.href = canvas.toDataURL();
     link.click();
-    btn.style.display = ''; // restore button
+    btn.style.display = '';
+    close.style.display = '';
   });
 });
 
