@@ -147,7 +147,7 @@ const outlinedLabelsPlugin = {
       // Fine-tune positioning for Speed and Defense labels
       if (label === 'Defense') {
         // Shift Defense (index 4) left (decrease radius slightly and move left)
-        const defenseOffset = 0.05; // Adjust angle slightly counter-clockwise
+        const defenseOffset = 0.08; // Increased from 0.05 to 0.08 for further left shift
         angle -= defenseOffset;
       } else if (label === 'Speed') {
         // Shift Speed (index 1) right (increase radius slightly and move right)
@@ -233,6 +233,8 @@ const downloadBtn = document.getElementById('downloadBtn');
 const characterBox = document.getElementById('characterBox');
 const imgInput = document.getElementById('imgInput');
 const uploadedImg = document.getElementById('uploadedImg');
+// NEW: Element for the subtle signature
+const subtleSignature = document.getElementById('subtleSignature');
 
 
 /* === Chart 1 (Main) Initialization === */
@@ -285,6 +287,9 @@ viewBtn.addEventListener('click', () => {
   overlayName.textContent = nameInput.value || '-';
   overlayAbility.textContent = abilityInput.value || '-';
   overlayLevel.textContent = levelInput.value || '-';
+  
+  // NEW: Set the subtle signature text
+  subtleSignature.textContent = 'Chart made by ' + (nameInput.value || 'Anonymous');
 
   setTimeout(() => {
     const img = document.getElementById('overlayImg');
