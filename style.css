@@ -91,7 +91,7 @@ button {
   height: 450px;
 }
 
-/* Overlay Styles */
+/* Overlay */
 .overlay {
   position: fixed;
   top: 0; left: 0;
@@ -102,7 +102,6 @@ button {
   align-items: center;
   z-index: 10;
 }
-
 .hidden { display: none; }
 
 .character-box {
@@ -143,7 +142,7 @@ button {
 
 .text-box {
   position: absolute;
-  bottom: -50px;           /* overlap about 1/5 of image */
+  bottom: -50px; /* overlap ~1/5 of image */
   width: 60%;
   background: white;
   border: 3px solid #493e3b;
