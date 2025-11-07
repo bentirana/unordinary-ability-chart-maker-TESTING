@@ -130,6 +130,7 @@ button {
   background: none;
   border: none;
   cursor: pointer;
+  z-index: 20;
 }
 
 .image-section {
@@ -163,8 +164,8 @@ button {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 500px;   /* enlarged canvas */
-  height: 500px;  /* extra padding for labels */
+  width: 520px;
+  height: 520px;
   position: relative;
 }
 
