@@ -2,11 +2,7 @@ let radar1, radar2;
 let radar2Ready = false;
 let chartColor = '#92dfec';
 
-// Centers for both charts
 const CHART1_CENTER = { x: 225, y: 225 };
-const CHART2_CENTER = { x: 250, y: 250 };
-
-// Make both charts slightly smaller (0.8 instead of 0.9)
 const CHART_SCALE_FACTOR = 0.8;
 
 function hexToRGBA(hex, alpha) {
@@ -60,6 +56,7 @@ const radarBackgroundPlugin = {
     ctx.strokeStyle = '#184046';
     ctx.lineWidth = 3;
     ctx.stroke();
+    // spokes
     ctx.beginPath();
     for (let i = 0; i < N; i++) {
       const a = start + (i * 2 * Math.PI / N);
@@ -136,19 +133,19 @@ function makeRadar(ctx, maxCap = null, showPoints = true, withBackground = false
       },
       customBackground: { enabled: withBackground },
       outlinedLabels: { enabled: true },
-      fixedCenter: { enabled: true, centerX: fixedCenter?.x, centerY: fixedCenter?.y },
+      fixedCenter: { enabled: !!fixedCenter, centerX: fixedCenter?.x, centerY: fixedCenter?.y },
       plugins: { legend: { display: false } }
     },
     plugins: [fixedCenterPlugin, radarBackgroundPlugin, outlinedLabelsPlugin]
   });
 }
 
-/* === Initialize Chart 1 === */
+/* === Chart 1 (Main) === */
 window.addEventListener('load', () => {
   radar1 = makeRadar(document.getElementById('radarChart1').getContext('2d'), null, true, false, CHART1_CENTER);
 });
 
-/* === Update Charts === */
+/* === Update charts === */
 updateBtn.addEventListener('click', () => {
   const vals = [
     +powerInput.value || 0,
@@ -160,34 +157,52 @@ updateBtn.addEventListener('click', () => {
   const capped = vals.map(v => Math.min(v, 10));
   chartColor = colorPicker.value;
   const fill = hexToRGBA(chartColor, 0.75);
+
   radar1.data.datasets[0].data = vals;
   radar1.data.datasets[0].borderColor = chartColor;
   radar1.data.datasets[0].backgroundColor = fill;
   radar1.update();
+
   if (radar2Ready) {
     radar2.data.datasets[0].data = capped;
     radar2.data.datasets[0].borderColor = chartColor;
     radar2.data.datasets[0].backgroundColor = fill;
     radar2.update();
   }
+
   dispName.textContent = nameInput.value || '-';
   dispAbility.textContent = abilityInput.value || '-';
   dispLevel.textContent = levelInput.value || '-';
 });
 
-/* === Overlay Controls === */
+/* === Overlay controls === */
 viewBtn.addEventListener('click', () => {
   overlay.classList.remove('hidden');
   overlayImg.src = uploadedImg.src;
   overlayName.textContent = nameInput.value || '-';
   overlayAbility.textContent = abilityInput.value || '-';
   overlayLevel.textContent = levelInput.value || '-';
+
   setTimeout(() => {
+    const img = document.getElementById('overlayImg');
+    const textBox = document.querySelector('.text-box');
+    const overlayChart = document.querySelector('.overlay-chart');
+    const imgHeight = img.offsetHeight;
+    const textHeight = textBox.offsetHeight;
+    const totalHeight = imgHeight + textHeight;
+    const targetSize = totalHeight * 0.8; // 4/5 height rule
+
+    overlayChart.style.height = `${targetSize}px`;
+    overlayChart.style.width = `${targetSize}px`;
+
     const ctx2 = document.getElementById('radarChart2').getContext('2d');
     if (!radar2Ready) {
-      radar2 = makeRadar(ctx2, 10, false, true, CHART2_CENTER);
+      radar2 = makeRadar(ctx2, 10, false, true, { x: targetSize / 2, y: targetSize / 2 });
       radar2Ready = true;
-    } else radar2.resize();
+    } else {
+      radar2.resize();
+    }
+
     const vals = [
       +powerInput.value || 0,
       +speedInput.value || 0,
@@ -195,17 +210,18 @@ viewBtn.addEventListener('click', () => {
       +recoveryInput.value || 0,
       +defenseInput.value || 0
     ].map(v => Math.min(v, 10));
+
     const fill = hexToRGBA(chartColor, 0.75);
     radar2.data.datasets[0].data = vals;
     radar2.data.datasets[0].borderColor = chartColor;
     radar2.data.datasets[0].backgroundColor = fill;
     radar2.update();
-  }, 150);
+  }, 200);
 });
 
 closeBtn.addEventListener('click', () => overlay.classList.add('hidden'));
 
-/* === Download Without Buttons === */
+/* === Download (hide buttons) === */
 downloadBtn.addEventListener('click', () => {
   downloadBtn.style.visibility = 'hidden';
   closeBtn.style.visibility = 'hidden';
@@ -219,7 +235,7 @@ downloadBtn.addEventListener('click', () => {
   });
 });
 
-/* === Image Upload === */
+/* === Image upload === */
 imgInput.addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
