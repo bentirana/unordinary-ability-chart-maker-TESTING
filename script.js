@@ -1,69 +1,216 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UnOrdinary Power Chart Maker</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-</head>
-<body>
-  <div class="container">
-    <div class="left">
-      <h1>UnOrdinary Power Chart Maker</h1>
+let radar1, radar2;
+let radar2Ready = false;
+let chartColor = '#92dfec';
+const CHART1_CENTER = { x: 225, y: 225 };
+const CHART2_CENTER = { x: 250, y: 250 };
+const CHART_SCALE_FACTOR = 0.9;
 
-      <input type="file" accept="image/*" id="imgInput">
-      <img id="uploadedImg" class="upload-img" alt="Uploaded Image">
+function hexToRGBA(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
-      <div class="info-box">
-        <b>Name:</b> <span id="dispName">-</span><br>
-        <b>Ability:</b> <span id="dispAbility">-</span><br>
-        <b>Level:</b> <span id="dispLevel">-</span>
-      </div>
+const fixedCenterPlugin = {
+  id: 'fixedCenter',
+  afterLayout(chart) {
+    const opt = chart.config.options.fixedCenter;
+    if (!opt?.enabled) return;
+    const r = chart.scales.r;
+    r.xCenter = opt.centerX ?? r.xCenter;
+    r.yCenter = opt.centerY ?? r.yCenter;
+    r.drawingArea *= CHART_SCALE_FACTOR;
+  }
+};
 
-      <div class="inputs">
-        <label>Name: <input type="text" id="nameInput"></label>
-        <label>Ability: <input type="text" id="abilityInput"></label>
-        <label>Level: <input type="text" id="levelInput"></label>
-        <label>Power: <input type="number" id="powerInput" step="0.1" min="0"></label>
-        <label>Speed: <input type="number" id="speedInput" step="0.1" min="0"></label>
-        <label>Trick: <input type="number" id="trickInput" step="0.1" min="0"></label>
-        <label>Recovery: <input type="number" id="recoveryInput" step="0.1" min="0"></label>
-        <label>Defense: <input type="number" id="defenseInput" step="0.1" min="0"></label>
-        <label>Ability Color: <input type="color" id="colorPicker" value="#92dfec"></label>
+const radarBackgroundPlugin = {
+  id: 'customPentagonBackground',
+  beforeDraw(chart) {
+    const opts = chart.config.options.customBackground;
+    if (!opts?.enabled) return;
+    const r = chart.scales.r;
+    const ctx = chart.ctx;
+    const cx = r.xCenter;
+    const cy = r.yCenter;
+    const radius = r.drawingArea;
+    const N = chart.data.labels.length;
+    const start = -Math.PI / 2;
+    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+    gradient.addColorStop(0, '#f8fcff');
+    gradient.addColorStop(0.25, '#92dfec');
+    gradient.addColorStop(1, '#92dfec');
+    ctx.save();
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const a = start + (i * 2 * Math.PI / N);
+      const x = cx + radius * Math.cos(a);
+      const y = cy + radius * Math.sin(a);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.strokeStyle = '#184046';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const a = start + (i * 2 * Math.PI / N);
+      const x = cx + radius * Math.cos(a);
+      const y = cy + radius * Math.sin(a);
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = '#6db5c0';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  }
+};
 
-        <button id="updateBtn">Update Chart</button>
-        <button id="viewBtn">View Character Chart</button>
-      </div>
-    </div>
+const outlinedLabelsPlugin = {
+  id: 'outlinedLabels',
+  afterDraw(chart) {
+    if (!chart?.config?.options?.outlinedLabels?.enabled) return;
+    const ctx = chart.ctx;
+    const r = chart.scales.r;
+    const labels = chart.data.labels;
+    const cx = r.xCenter;
+    const cy = r.yCenter;
+    const radius = r.drawingArea + Math.max(40, r.drawingArea * 0.2);
+    const base = -Math.PI / 2;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'italic 18px Candara';
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = chartColor;
+    ctx.fillStyle = 'white';
+    labels.forEach((label, i) => {
+      const angle = base + (i * 2 * Math.PI / labels.length);
+      const x = cx + radius * Math.cos(angle);
+      const y = cy + radius * Math.sin(angle);
+      ctx.strokeText(label, x, y);
+      ctx.fillText(label, x, y);
+    });
+    ctx.restore();
+  }
+};
 
-    <div class="chart-area">
-      <canvas id="radarChart1"></canvas>
-    </div>
-  </div>
+function makeRadar(ctx, maxCap = null, showPoints = true, withBackground = false, fixedCenter = null) {
+  return new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['Power', 'Speed', 'Trick', 'Recovery', 'Defense'],
+      datasets: [{
+        data: [0, 0, 0, 0, 0],
+        backgroundColor: 'transparent',
+        borderColor: '#92dfec',
+        borderWidth: 2,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: '#92dfec',
+        pointRadius: showPoints ? 5 : 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        r: {
+          grid: { display: false },
+          angleLines: { color: '#6db5c0', lineWidth: 1 },
+          suggestedMin: 0,
+          suggestedMax: maxCap ?? undefined,
+          ticks: { display: false },
+          pointLabels: { display: false }
+        }
+      },
+      customBackground: { enabled: withBackground },
+      outlinedLabels: { enabled: true },
+      fixedCenter: { enabled: true, centerX: fixedCenter?.x, centerY: fixedCenter?.y },
+      plugins: { legend: { display: false } }
+    },
+    plugins: [fixedCenterPlugin, radarBackgroundPlugin, outlinedLabelsPlugin]
+  });
+}
 
-  <div id="overlay" class="overlay hidden">
-    <div id="characterBox" class="character-box">
-      <button id="closeBtn" class="close-btn">×</button>
+window.addEventListener('load', () => {
+  radar1 = makeRadar(document.getElementById('radarChart1').getContext('2d'), null, true, false, CHART1_CENTER);
+});
 
-      <div class="image-section">
-        <img id="overlayImg" class="overlay-img" alt="Character Image">
-        <div class="text-box">
-          <b>Name:</b> <span id="overlayName">-</span><br>
-          <b>Ability:</b> <span id="overlayAbility">-</span><br>
-          <b>Level:</b> <span id="overlayLevel">-</span>
-        </div>
-      </div>
+updateBtn.addEventListener('click', () => {
+  const vals = [
+    +powerInput.value || 0,
+    +speedInput.value || 0,
+    +trickInput.value || 0,
+    +recoveryInput.value || 0,
+    +defenseInput.value || 0
+  ];
+  const capped = vals.map(v => Math.min(v, 10));
+  chartColor = colorPicker.value;
+  const fill = hexToRGBA(chartColor, 0.75);
+  radar1.data.datasets[0].data = vals;
+  radar1.data.datasets[0].borderColor = chartColor;
+  radar1.data.datasets[0].backgroundColor = fill;
+  radar1.update();
+  if (radar2Ready) {
+    radar2.data.datasets[0].data = capped;
+    radar2.data.datasets[0].borderColor = chartColor;
+    radar2.data.datasets[0].backgroundColor = fill;
+    radar2.update();
+  }
+  dispName.textContent = nameInput.value || '-';
+  dispAbility.textContent = abilityInput.value || '-';
+  dispLevel.textContent = levelInput.value || '-';
+});
 
-      <div class="overlay-chart">
-        <canvas id="radarChart2"></canvas>
-      </div>
+viewBtn.addEventListener('click', () => {
+  overlay.classList.remove('hidden');
+  overlayImg.src = uploadedImg.src;
+  overlayName.textContent = nameInput.value || '-';
+  overlayAbility.textContent = abilityInput.value || '-';
+  overlayLevel.textContent = levelInput.value || '-';
+  setTimeout(() => {
+    const ctx2 = document.getElementById('radarChart2').getContext('2d');
+    if (!radar2Ready) {
+      radar2 = makeRadar(ctx2, 10, false, true, CHART2_CENTER);
+      radar2Ready = true;
+    } else radar2.resize();
+    const vals = [
+      +powerInput.value || 0,
+      +speedInput.value || 0,
+      +trickInput.value || 0,
+      +recoveryInput.value || 0,
+      +defenseInput.value || 0
+    ].map(v => Math.min(v, 10));
+    const fill = hexToRGBA(chartColor, 0.75);
+    radar2.data.datasets[0].data = vals;
+    radar2.data.datasets[0].borderColor = chartColor;
+    radar2.data.datasets[0].backgroundColor = fill;
+    radar2.update();
+  }, 150);
+});
 
-      <button id="downloadBtn">Download Character Chart</button>
-    </div>
-  </div>
+closeBtn.addEventListener('click', () => overlay.classList.add('hidden'));
 
-  <script src="script.js"></script>
-</body>
-</html>
+downloadBtn.addEventListener('click', () => {
+  downloadBtn.style.visibility = 'hidden';
+  closeBtn.style.visibility = 'hidden';
+  html2canvas(characterBox).then(canvas => {
+    const link = document.createElement('a');
+    link.download = 'character_chart.png';
+    link.href = canvas.toDataURL();
+    link.click();
+    downloadBtn.style.visibility = 'visible';
+    closeBtn.style.visibility = 'visible';
+  });
+});
+
+imgInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { uploadedImg.src = ev.target.result; };
+  reader.readAsDataURL(file);
+});
