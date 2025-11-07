@@ -1,1 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UnOrdinary Power Chart Maker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Candara, sans-serif;
+      background: #f0f8fc;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 30px;
+      gap: 40px;
+      color: white;
+    }
+    h1 {
+      text-align: center;
+      font-style: italic;
+      color: #333;
+    }
+    .container {
+      display: flex;
+      gap: 40px;
+      align-items: center;
+    }
+    .left {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+    .upload-img {
+      width: 250px;
+      height: 250px;
+      border: 2px dashed #aaa;
+      border-radius: 10px;
+      object-fit: cover;
+      background-color: white;
+    }
+    .info-box {
+      background-color: white;
+      color: black;
+      border-radius: 8px;
+      padding: 10px 15px;
+      width: 250px;
+      line-height: 1.5;
+    }
+    .info-box b {
+      font-weight: bold;
+    }
+    .inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    label {
+      font-style: italic;
+      color: #333;
+    }
+    input[type="number"], input[type="text"] {
+      width: 150px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      padding: 4px;
+      font-family: Candara;
+    }
+    input[type="color"] {
+      border: none;
+      background: none;
+      width: 60px;
+      height: 40px;
+      cursor: pointer;
+    }
+    button {
+      margin-top: 10px;
+      padding: 6px 10px;
+      font-family: Candara;
+      background-color: #92dfec;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .chart-area {
+      position: relative;
+      width: 450px;
+      height: 450px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="left">
+      <h1>UnOrdinary Power Chart Maker</h1>
+      <input type="file" accept="image/*" id="imgInput">
+      <img id="uploadedImg" class="upload-img" alt="Uploaded Image">
+      <div class="info-box" id="infoDisplay">
+        <b>Name:</b> <span id="dispName">-</span><br>
+        <b>Ability:</b> <span id="dispAbility">-</span><br>
+        <b>Level:</b> <span id="dispLevel">-</span>
+      </div>
+      <div class="inputs">
+        <label>Name: <input type="text" id="name"></label>
+        <label>Ability: <input type="text" id="ability"></label>
+        <label>Level: <input type="text" id="level"></label>
+        <label>Power: <input type="number" id="power" step="0.1" min="0"></label>
+        <label>Speed: <input type="number" id="speed" step="0.1" min="0"></label>
+        <label>Trick: <input type="number" id="trick" step="0.1" min="0"></label>
+        <label>Recovery: <input type="number" id="recovery" step="0.1" min="0"></label>
+        <label>Defense: <input type="number" id="defense" step="0.1" min="0"></label>
+        <label>Ability Color: <input type="color" id="colorPicker" value="#92dfec"></label>
+        <button onclick="updateChart()">Update Chart</button>
+      </div>
+    </div>
+
+    <div class="chart-area">
+      <canvas id="radarChart"></canvas>
+    </div>
+  </div>
+
+  <script>
+    const ctx = document.getElementById('radarChart');
+    let chartColor = '#92dfec';
+
+    // initialize Chart.js radar chart
+    const chart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['Power', 'Speed', 'Trick', 'Recovery', 'Defense'],
+        datasets: [{
+          label: 'Stats',
+          data: [0, 0, 0, 0, 0],
+          backgroundColor: 'rgba(146, 223, 236, 0.75)',
+          borderColor: '#92dfec',
+          borderWidth: 2,
+          pointBackgroundColor: '#fff',
+          pointBorderColor: '#92dfec',
+          pointRadius: 5
+        }]
+      },
+      options: {
+        scales: {
+          r: {
+            angleLines: { color: '#ccc', lineWidth: 1 },
+            grid: { display: false },
+            suggestedMin: 0,
+            suggestedMax: 10,
+            ticks: { display: false },
+            pointLabels: {
+              color: function(context) {
+                return chartColor;
+              },
+              font: { family: 'Candara', style: 'italic', size: 16 },
+              callback: function(label) {
+                return label;
+              }
+            }
+          }
+        },
+        plugins: { legend: { display: false } },
+        animation: { duration: 500 }
+      }
+    });
+
+    // gradient background
+    const gradient = ctx.getContext('2d').createRadialGradient(225, 225, 0, 225, 225, 225);
+    gradient.addColorStop(0, '#f8fcff');
+    gradient.addColorStop(0.25, '#92dfec');
+    gradient.addColorStop(1, '#92dfec');
+    chart.data.datasets[0].backgroundColor = gradient;
+
+    // image upload
+    document.getElementById('imgInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          document.getElementById('uploadedImg').src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // chart + info update
+    function updateChart() {
+      const stats = [
+        parseFloat(document.getElementById('power').value) || 0,
+        parseFloat(document.getElementById('speed').value) || 0,
+        parseFloat(document.getElementById('trick').value) || 0,
+        parseFloat(document.getElementById('recovery').value) || 0,
+        parseFloat(document.getElementById('defense').value) || 0
+      ].map(x => Math.min(x, 10));
+
+      const newColor = document.getElementById('colorPicker').value;
+      chartColor = newColor;
+
+      const grad = ctx.getContext('2d').createRadialGradient(225, 225, 0, 225, 225, 225);
+      grad.addColorStop(0, '#f8fcff');
+      grad.addColorStop(0.25, newColor + 'BF'); // ~75% opacity
+      grad.addColorStop(1, newColor + 'BF');
+
+      chart.data.datasets[0].data = stats;
+      chart.data.datasets[0].backgroundColor = grad;
+      chart.data.datasets[0].borderColor = newColor;
+      chart.data.datasets[0].pointBorderColor = newColor;
+      chart.update();
+
+      document.getElementById('dispName').textContent = document.getElementById('name').value || '-';
+      document.getElementById('dispAbility').textContent = document.getElementById('ability').value || '-';
+      document.getElementById('dispLevel').textContent = document.getElementById('level').value || '-';
+    }
+  </script>
+</body>
+</html>
 
