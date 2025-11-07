@@ -1,271 +1,347 @@
-/* ===== General Layout ===== */
-body {
-  font-family: Candara, sans-serif;
-  background: #f0f8fc;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 40px;
-  margin: 0;
-  color: #333;
+let radar1, radar2;
+let radar2Ready = false;
+let chartColor = '#92dfec';
+
+// Pre-defined center coordinates for the main chart based on its container size (450x450 max)
+const CHART1_CENTER = { x: 225, y: 225 }; 
+const CHART_SCALE_FACTOR = 0.8;
+// Multiplier for the Character Chart (Chart 2) container size (Reduced by ~33%)
+const CHART_SIZE_MULTIPLIER = 1.0; 
+
+function hexToRGBA(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
-/* Header and Info Styling */
-.header-with-info {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 10px;
-  position: relative;
+/* === Fix radar scale center and radius (to prevent clipping) === */
+const fixedCenterPlugin = {
+  id: 'fixedCenter',
+  beforeLayout(chart) {
+    const opt = chart.config.options.fixedCenter;
+    if (!opt?.enabled) return;
+    const r = chart.scales.r;
+    
+    if (opt.centerX && opt.centerY) {
+      r.xCenter = opt.centerX;
+      r.yCenter = opt.centerY;
+    }
+    
+    r.drawingArea *= CHART_SCALE_FACTOR;
+  }
+};
+
+/* === Pentagon background + spokes (Overlay Chart) === */
+const radarBackgroundPlugin = {
+  id: 'customPentagonBackground',
+  // Draw the background fill BEFORE the dataset
+  beforeDatasetsDraw(chart) {
+    const opts = chart.config.options.customBackground;
+    if (!opts?.enabled) return;
+    const r = chart.scales.r;
+    const ctx = chart.ctx;
+    const cx = r.xCenter;
+    const cy = r.yCenter;
+    const radius = r.drawingArea;
+    const N = chart.data.labels.length;
+    const start = -Math.PI / 2;
+    
+    // Radial Gradient (Fill)
+    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+    gradient.addColorStop(0, '#f8fcff');
+    gradient.addColorStop(0.25, '#92dfec');
+    gradient.addColorStop(1, '#92dfec');
+    
+    ctx.save();
+    
+    // Draw Pentagon Shape (background fill)
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const a = start + (i * 2 * Math.PI / N);
+      const x = cx + radius * Math.cos(a);
+      const y = cy + radius * Math.sin(a);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    
+    ctx.restore();
+  },
+  
+  // Draw the spokes and outer border (outline) AFTER the dataset is drawn (on top of it)
+  afterDatasetsDraw(chart) {
+    const opts = chart.config.options.customBackground;
+    if (!opts?.enabled) return;
+    const r = chart.scales.r;
+    const ctx = chart.ctx;
+    const cx = r.xCenter;
+    const cy = r.yCenter;
+    const radius = r.drawingArea;
+    const N = chart.data.labels.length;
+    const start = -Math.PI / 2;
+    
+    ctx.save();
+    
+    // Draw Spokes
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const a = start + (i * 2 * Math.PI / N);
+      const x = cx + radius * Math.cos(a);
+      const y = cy + radius * Math.sin(a);
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(x, y);
+    }
+    // Changed spoke color to a darker teal
+    ctx.strokeStyle = '#35727d';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Draw Pentagon Outline
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const a = start + (i * 2 * Math.PI / N);
+      const x = cx + radius * Math.cos(a);
+      const y = cy + radius * Math.sin(a);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = '#184046';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    ctx.restore();
+  }
+};
+
+/* === Outlined Axis Labels (Prevents Cutoff & uses chartColor) === */
+const outlinedLabelsPlugin = {
+  id: 'outlinedLabels',
+  afterDraw(chart) {
+    const ctx = chart.ctx;
+    const r = chart.scales.r;
+    const labels = chart.data.labels;
+    const cx = r.xCenter;
+    const cy = r.yCenter;
+    
+    // Adjust label radius for better positioning outside the chart area
+    const radius = r.drawingArea * 1.05 + 15; 
+    const base = -Math.PI / 2;
+    
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'italic 18px Candara';
+    
+    // Outline color is the selected ability color, fill is white
+    ctx.strokeStyle = chartColor; 
+    ctx.fillStyle = 'white'; 
+    ctx.lineWidth = 4;
+
+    labels.forEach((label, i) => {
+      const angle = base + (i * 2 * Math.PI / labels.length);
+      const x = cx + radius * Math.cos(angle);
+      const y = cy + radius * Math.sin(angle);
+      
+      ctx.strokeText(label, x, y);
+      ctx.fillText(label, x, y);
+    });
+    ctx.restore();
+  }
+};
+
+/* === Create Chart Function === */
+function makeRadar(ctx, maxCap = null, showPoints = true, withBackground = false, fixedCenter = null) {
+  return new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['Power', 'Speed', 'Trick', 'Recovery', 'Defense'],
+      datasets: [{
+        data: [0, 0, 0, 0, 0],
+        backgroundColor: 'transparent',
+        borderColor: chartColor, 
+        borderWidth: 2,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: chartColor, 
+        pointRadius: showPoints ? 5 : 0,
+        order: 1 
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        r: {
+          grid: { display: false },
+          angleLines: { color: '#6db5c0', lineWidth: 1 },
+          suggestedMin: 0,
+          suggestedMax: maxCap ?? 10, 
+          ticks: { display: false },
+          pointLabels: { 
+            display: true, 
+            font: { size: 16 },
+            color: 'transparent' 
+          } 
+        }
+      },
+      customBackground: { enabled: withBackground },
+      fixedCenter: { enabled: !!fixedCenter, centerX: fixedCenter?.x, centerY: fixedCenter?.y },
+      plugins: { legend: { display: false } }
+    },
+    plugins: [fixedCenterPlugin, radarBackgroundPlugin, outlinedLabelsPlugin]
+  });
 }
 
-h1 {
-  text-align: center;
-  font-style: italic;
-  color: #333;
-  margin: 0;
-}
+// Get DOM elements
+const updateBtn = document.getElementById('updateBtn');
+const viewBtn = document.getElementById('viewBtn');
+const powerInput = document.getElementById('powerInput');
+const speedInput = document.getElementById('speedInput');
+const trickInput = document.getElementById('trickInput');
+const recoveryInput = document.getElementById('recoveryInput');
+const defenseInput = document.getElementById('defenseInput');
+const colorPicker = document.getElementById('colorPicker');
+const dispName = document.getElementById('dispName');
+const dispAbility = document.getElementById('dispAbility');
+const dispLevel = document.getElementById('dispLevel');
+const nameInput = document.getElementById('nameInput');
+const abilityInput = document.getElementById('abilityInput');
+const levelInput = document.getElementById('levelInput');
+const overlay = document.getElementById('overlay');
+const overlayImg = document.getElementById('overlayImg');
+const overlayName = document.getElementById('overlayName');
+const overlayAbility = document.getElementById('overlayAbility');
+const overlayLevel = document.getElementById('overlayLevel');
+const closeBtn = document.getElementById('closeBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const characterBox = document.getElementById('characterBox');
+const imgInput = document.getElementById('imgInput');
+const uploadedImg = document.getElementById('uploadedImg');
 
-.info-container {
-  position: relative;
-  display: inline-block;
-  margin-left: 8px;
-  cursor: pointer;
-}
 
-.info-icon {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background-color: #6db5c0;
-  color: white;
-  text-align: center;
-  line-height: 18px;
-  font-weight: bold;
-  font-size: 14px;
-}
+/* === Chart 1 (Main) Initialization === */
+window.addEventListener('load', () => {
+  const ctx1 = document.getElementById('radarChart1').getContext('2d');
+  radar1 = makeRadar(ctx1, null, true, false, CHART1_CENTER); 
+  chartColor = colorPicker.value;
+});
 
-.info-hover {
-  visibility: hidden;
-  width: 300px;
-  background-color: #333;
-  color: #fff;
-  text-align: left;
-  border-radius: 6px;
-  padding: 10px;
-  position: absolute;
-  z-index: 100;
-  /* FIX: Now uses 'top' to appear below the icon */
-  top: 115%; 
-  left: 50%;
-  transform: translateX(-50%);
-  opacity: 0;
-  transition: opacity 0.3s;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  white-space: normal;
-  font-family: sans-serif;
-  font-style: normal;
-  font-size: 14px;
-  line-height: 1.4;
-}
+/* === Update charts and info === */
+updateBtn.addEventListener('click', () => {
+  const vals = [
+    +powerInput.value || 0,
+    +speedInput.value || 0,
+    +trickInput.value || 0,
+    +recoveryInput.value || 0,
+    +defenseInput.value || 0
+  ];
+  
+  const capped = vals.map(v => Math.min(v, 10)); 
+  
+  chartColor = colorPicker.value;
+  const fill = hexToRGBA(chartColor, 0.75);
 
-.info-container:hover .info-hover {
-  visibility: visible;
-  opacity: 1;
-}
+  // Update Chart 1 (Main) with uncapped values
+  radar1.data.datasets[0].data = vals;
+  radar1.data.datasets[0].borderColor = chartColor;
+  radar1.data.datasets[0].pointBorderColor = chartColor;
+  radar1.data.datasets[0].backgroundColor = fill;
+  radar1.update();
 
-/* ===== Container ===== */
-.container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 40px;
-  max-width: 1200px;
-  width: 100%;
-}
+  // Update Chart 2 (Overlay) if it has been initialized
+  if (radar2Ready) {
+    radar2.data.datasets[0].data = capped;
+    radar2.data.datasets[0].borderColor = chartColor;
+    radar2.data.datasets[0].backgroundColor = fill;
+    radar2.update();
+  }
 
-/* ===== Left Side ===== */
-.left {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
-  min-width: 300px;
-  flex: 1 1 350px;
-}
+  dispName.textContent = nameInput.value || '-';
+  dispAbility.textContent = abilityInput.value || '-';
+  dispLevel.textContent = levelInput.value || '-';
+});
 
-.upload-img {
-  width: clamp(180px, 25vw, 250px);
-  height: clamp(180px, 25vw, 250px);
-  border: 2px dashed #aaa;
-  border-radius: 10px;
-  object-fit: cover;
-  background-color: white;
-}
+/* === Overlay controls === */
+viewBtn.addEventListener('click', () => {
+  overlay.classList.remove('hidden');
+  overlayImg.src = uploadedImg.src;
+  overlayName.textContent = nameInput.value || '-';
+  overlayAbility.textContent = abilityInput.value || '-';
+  overlayLevel.textContent = levelInput.value || '-';
 
-.info-box {
-  background-color: white;
-  color: black;
-  border-radius: 8px;
-  padding: 10px 15px;
-  width: clamp(180px, 25vw, 250px);
-  text-align: left;
-  line-height: 1.5;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
+  setTimeout(() => {
+    const img = document.getElementById('overlayImg');
+    const textBox = document.querySelector('.text-box');
+    const overlayChart = document.querySelector('.overlay-chart');
+    
+    // Force a redraw to get accurate dimensions
+    const imgHeight = img.offsetHeight; 
+    const textHeight = textBox.offsetHeight;
+    
+    // Calculate required size for alignment (Image Height + Text Box Height)
+    const targetVerticalSpan = imgHeight + textHeight; 
+    
+    // Use the new, smaller multiplier (1.0)
+    const targetSize = targetVerticalSpan * CHART_SIZE_MULTIPLIER;
 
-.inputs {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 10px;
-  width: 100%;
-  align-items: center;
-}
+    // Apply the calculated size to the chart container
+    overlayChart.style.height = `${targetSize}px`;
+    overlayChart.style.width = `${targetSize}px`;
 
-label {
-  font-style: italic;
-  color: #333;
-  font-size: 15px;
-  display: flex;
-  justify-content: space-between;
-  width: clamp(200px, 80%, 260px);
-}
+    const ctx2 = document.getElementById('radarChart2').getContext('2d');
+    
+    // Initialize or resize Chart 2
+    if (!radar2Ready) {
+      // Pass the new targetSize/2 for the center coordinates
+      radar2 = makeRadar(ctx2, 10, false, true, { x: targetSize / 2, y: targetSize / 2 });
+      radar2Ready = true;
+    } else {
+      radar2.resize(); 
+    }
 
-input[type="number"], input[type="text"] {
-  width: 110px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  padding: 4px;
-  font-family: Candara;
-}
+    // Update Chart 2 data (CAPPED at 10)
+    const vals = [
+      +powerInput.value || 0,
+      +speedInput.value || 0,
+      +trickInput.value || 0,
+      +recoveryInput.value || 0,
+      +defenseInput.value || 0
+    ].map(v => Math.min(v, 10));
 
-input[type="color"] {
-  border: none;
-  background: none;
-  width: 60px;
-  height: 40px;
-  cursor: pointer;
-}
+    const fill = hexToRGBA(chartColor, 0.75);
+    radar2.data.datasets[0].data = vals;
+    radar2.data.datasets[0].borderColor = chartColor;
+    radar2.data.datasets[0].backgroundColor = fill;
+    radar2.update();
+  }, 200);
+});
 
-button {
-  margin-top: 8px;
-  padding: 6px 12px;
-  font-family: Candara;
-  font-weight: bold;
-  background-color: #92dfec;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
+closeBtn.addEventListener('click', () => overlay.classList.add('hidden'));
 
-button:hover {
-  background-color: #6db5c0;
-  color: white;
-}
+/* === Download (hide buttons before capture) === */
+downloadBtn.addEventListener('click', () => {
+  downloadBtn.style.visibility = 'hidden';
+  closeBtn.style.visibility = 'hidden';
+  
+  // Use html2canvas to capture the characterBox
+  html2canvas(characterBox, { scale: 2 }).then(canvas => {
+    const link = document.createElement('a');
+    link.download = (nameInput.value || 'UnOrdinary_Character') + '_chart.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    
+    // Restore buttons after download
+    downloadBtn.style.visibility = 'visible';
+    closeBtn.style.visibility = 'visible';
+  });
+});
 
-/* ===== Chart Area ===== */
-.chart-area {
-  position: relative;
-  width: clamp(300px, 40vw, 450px);
-  height: clamp(300px, 40vw, 450px);
-  background: none;
-}
-
-/* ===== Overlay ===== */
-.overlay {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10;
-}
-
-.hidden { display: none; }
-
-.character-box {
-  background: #fff;
-  /* Updated to be 20% smaller */
-  width: 52vw;
-  height: 64vh;
-  border-radius: 15px;
-  position: relative;
-  color: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 40px;
-  overflow: hidden;
-  padding: 20px;
-  border: none;
-}
-
-.close-btn {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  font-size: 28px;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-.image-section {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  z-index: 3; 
-}
-
-.overlay-img {
-  width: 300px;
-  height: 300px;
-  object-fit: cover;
-  border: 3px solid #493e3b;
-  border-radius: 6px;
-}
-
-.text-box {
-  position: absolute;
-  bottom: -45px;
-  width: 80%;
-  background: white;
-  border: 3px solid #493e3b;
-  padding: 10px;
-  font-family: Candara;
-  text-align: center;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  border-radius: 5px;
-}
-
-/* ===== Overlay Chart (Container size determined by script.js) ===== */
-.overlay-chart {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  /* Starting size; overridden by script.js */
-  width: clamp(280px, 40vw, 450px); 
-  height: clamp(280px, 40vw, 450px);
-  position: relative;
-  z-index: 2; 
-}
-
-/* ===== Download Button ===== */
-#downloadBtn {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  background: #92dfec;
-  border: none;
-  border-radius: 5px;
-  padding: 6px 10px;
-  cursor: pointer;
-  font-weight: bold;
-}
+/* === Image upload === */
+imgInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { uploadedImg.src = ev.target.result; };
+  reader.readAsDataURL(file);
+});
