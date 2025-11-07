@@ -2,9 +2,9 @@ let radar1, radar2;
 let radar2Ready = false;
 let chartColor = '#92dfec';
 
-// Pre-defined center coordinates for the main chart based on its container size (450x450 max)
-// SHIFTED 3 PIXELS LEFT (225 -> 222)
-const CHART1_CENTER = { x: 222, y: 225 }; 
+// Pre-defined center coordinates for the main chart based on its container size (500x500 max)
+// Center adjusted to 250x250, then shifted 3 PIXELS LEFT (250 -> 247)
+const CHART1_CENTER = { x: 247, y: 250 }; 
 const CHART_SCALE_FACTOR = 0.8;
 // Multiplier for the Character Chart (Chart 2) container size (Reduced by ~33%)
 const CHART_SIZE_MULTIPLIER = 1.0; 
