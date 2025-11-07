@@ -195,4 +195,61 @@ document.getElementById('updateBtn').addEventListener('click', () => {
 const overlay = document.getElementById('overlay');
 const viewBtn = document.getElementById('viewBtn');
 const closeBtn = document.getElementById('closeBtn');
-const downloadBtn = document.get
+const downloadBtn = document.getElementById('downloadBtn');
+
+viewBtn.addEventListener('click', () => {
+  overlay.classList.remove('hidden');
+  document.getElementById('overlayImg').src = document.getElementById('uploadedImg').src;
+  document.getElementById('overlayName').textContent = nameInput.value || '-';
+  document.getElementById('overlayAbility').textContent = abilityInput.value || '-';
+  document.getElementById('overlayLevel').textContent = levelInput.value || '-';
+
+  setTimeout(() => {
+    const ctx2 = document.getElementById('radarChart2').getContext('2d');
+    if (!radar2Ready) {
+      radar2 = makeRadar(ctx2, 10, false, true, true);
+      radar2Ready = true;
+    } else radar2.resize();
+
+    const vals = [
+      parseFloat(powerInput.value) || 0,
+      parseFloat(speedInput.value) || 0,
+      parseFloat(trickInput.value) || 0,
+      parseFloat(recoveryInput.value) || 0,
+      parseFloat(defenseInput.value) || 0
+    ].map(v => Math.min(v, 10));
+
+    const fill = hexToRGBA(chartColor, 0.75);
+    radar2.data.datasets[0].data = vals;
+    radar2.data.datasets[0].borderColor = chartColor;
+    radar2.data.datasets[0].backgroundColor = fill;
+    radar2.update();
+  }, 150);
+});
+
+closeBtn.addEventListener('click', () => overlay.classList.add('hidden'));
+
+/* === Download (no close button in PNG) === */
+downloadBtn.addEventListener('click', () => {
+  downloadBtn.style.visibility = 'hidden';
+  closeBtn.style.visibility = 'hidden';
+  html2canvas(document.getElementById('characterBox')).then(canvas => {
+    const link = document.createElement('a');
+    link.download = 'character_chart.png';
+    link.href = canvas.toDataURL();
+    link.click();
+    downloadBtn.style.visibility = 'visible';
+    closeBtn.style.visibility = 'visible';
+  });
+});
+
+/* === Upload === */
+document.getElementById('imgInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('uploadedImg').src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
