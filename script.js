@@ -2,7 +2,18 @@ let chartColor = '#92dfec';
 let radar1, radar2;
 let radar2Ready = false;
 
-// Create radar chart (shared)
+// Safer references so "name" doesn't collide with window.name
+const nameInput     = document.getElementById('name');
+const abilityInput  = document.getElementById('ability');
+const levelInput    = document.getElementById('level');
+const powerInput    = document.getElementById('power');
+const speedInput    = document.getElementById('speed');
+const trickInput    = document.getElementById('trick');
+const recoveryInput = document.getElementById('recovery');
+const defenseInput  = document.getElementById('defense');
+const colorPicker   = document.getElementById('colorPicker');
+
+// Helper to build a radar chart
 function makeRadar(ctx, maxCap = null, showPoints = true) {
   return new Chart(ctx, {
     type: 'radar',
@@ -33,17 +44,19 @@ function makeRadar(ctx, maxCap = null, showPoints = true) {
         }
       },
       plugins: { legend: { display: false } },
-      animation: { duration: 500 }
+      animation: { duration: 500 },
+      responsive: true,
+      maintainAspectRatio: false
     }
   });
 }
 
-// Initialize Chart 1
+// Init chart 1
 window.addEventListener('load', () => {
   radar1 = makeRadar(document.getElementById('radarChart1'));
 });
 
-// HEX → RGBA helper
+// HEX → RGBA
 function hexToRGBA(hex, alpha) {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -51,20 +64,20 @@ function hexToRGBA(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-// Update both charts and info
+// Update stats + chart1 (+ chart2 if open)
 document.getElementById('updateBtn').addEventListener('click', () => {
   const vals = [
-    parseFloat(power.value) || 0,
-    parseFloat(speed.value) || 0,
-    parseFloat(trick.value) || 0,
-    parseFloat(recovery.value) || 0,
-    parseFloat(defense.value) || 0
+    parseFloat(powerInput.value) || 0,
+    parseFloat(speedInput.value) || 0,
+    parseFloat(trickInput.value) || 0,
+    parseFloat(recoveryInput.value) || 0,
+    parseFloat(defenseInput.value) || 0
   ];
   const capped = vals.map(v => Math.min(v, 10));
   const color = colorPicker.value;
   chartColor = color;
 
-  // Update chart 1
+  // Chart 1 update
   radar1.data.datasets[0].data = vals;
   radar1.data.datasets[0].borderColor = color;
   radar1.data.datasets[0].backgroundColor = hexToRGBA(color, 0.75);
@@ -72,7 +85,7 @@ document.getElementById('updateBtn').addEventListener('click', () => {
   radar1.options.scales.r.pointLabels.color = color;
   radar1.update();
 
-  // Update chart 2 if already built
+  // Chart 2 live update (if open)
   if (radar2Ready) {
     radar2.data.datasets[0].data = capped;
     radar2.data.datasets[0].borderColor = color;
@@ -81,39 +94,44 @@ document.getElementById('updateBtn').addEventListener('click', () => {
     radar2.update();
   }
 
-  dispName.textContent = document.getElementById('name').value || '-';
-  dispAbility.textContent = document.getElementById('ability').value || '-';
-  dispLevel.textContent = document.getElementById('level').value || '-';
+  // Update info boxes
+  document.getElementById('dispName').textContent    = nameInput.value    || '-';
+  document.getElementById('dispAbility').textContent = abilityInput.value || '-';
+  document.getElementById('dispLevel').textContent   = levelInput.value   || '-';
 });
 
-// Overlay logic
-const overlay = document.getElementById('overlay');
-const viewBtn = document.getElementById('viewBtn');
-const closeBtn = document.getElementById('closeBtn');
+// Overlay elements
+const overlay     = document.getElementById('overlay');
+const viewBtn     = document.getElementById('viewBtn');
+const closeBtn    = document.getElementById('closeBtn');
 const downloadBtn = document.getElementById('downloadBtn');
 
+// Open overlay
 viewBtn.addEventListener('click', () => {
   overlay.classList.remove('hidden');
 
-  // Copy info
-  document.getElementById('overlayImg').src = document.getElementById('uploadedImg').src;
-  document.getElementById('overlayName').textContent = document.getElementById('name').value || '-';
-  document.getElementById('overlayAbility').textContent = document.getElementById('ability').value || '-';
-  document.getElementById('overlayLevel').textContent = document.getElementById('level').value || '-';
+  // Copy info immediately
+  document.getElementById('overlayImg').src        = document.getElementById('uploadedImg').src;
+  document.getElementById('overlayName').textContent    = nameInput.value    || '-';
+  document.getElementById('overlayAbility').textContent = abilityInput.value || '-';
+  document.getElementById('overlayLevel').textContent   = levelInput.value   || '-';
 
-  // Build Chart 2 after overlay renders
+  // Wait for overlay to render fully, then create / resize chart2
   setTimeout(() => {
+    const ctx2 = document.getElementById('radarChart2');
     if (!radar2Ready) {
-      radar2 = makeRadar(document.getElementById('radarChart2'), 10, false);
+      radar2 = makeRadar(ctx2, 10, false);
       radar2Ready = true;
+    } else {
+      radar2.resize(); // ensure proper dimensions after display
     }
 
     const vals = [
-      parseFloat(power.value) || 0,
-      parseFloat(speed.value) || 0,
-      parseFloat(trick.value) || 0,
-      parseFloat(recovery.value) || 0,
-      parseFloat(defense.value) || 0
+      parseFloat(powerInput.value) || 0,
+      parseFloat(speedInput.value) || 0,
+      parseFloat(trickInput.value) || 0,
+      parseFloat(recoveryInput.value) || 0,
+      parseFloat(defenseInput.value) || 0
     ].map(v => Math.min(v, 10));
 
     const color = colorPicker.value;
@@ -122,12 +140,13 @@ viewBtn.addEventListener('click', () => {
     radar2.data.datasets[0].backgroundColor = hexToRGBA(color, 0.75);
     radar2.options.scales.r.pointLabels.color = color;
     radar2.update();
-  }, 100);
+  }, 150);
 });
 
+// Close overlay
 closeBtn.addEventListener('click', () => overlay.classList.add('hidden'));
 
-// Download Character Box
+// Download character box as PNG
 downloadBtn.addEventListener('click', () => {
   html2canvas(document.getElementById('characterBox')).then(canvas => {
     const link = document.createElement('a');
