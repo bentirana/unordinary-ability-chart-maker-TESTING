@@ -50,7 +50,7 @@ const radarBackgroundPlugin = {
     // Radial Gradient (Fill)
     const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
     gradient.addColorStop(0, '#f8fcff');
-    // CHANGE: Gradient transition moved to 33%
+    // Gradient transition moved to 33%
     gradient.addColorStop(0.33, '#92dfec'); 
     gradient.addColorStop(1, '#92dfec');
     
@@ -126,8 +126,8 @@ const outlinedLabelsPlugin = {
     const cx = r.xCenter;
     const cy = r.yCenter;
     
-    // CHANGE: Adjusted label radius (increased 15 to 25) for better spacing
-    const radius = r.drawingArea * 1.05 + 25; 
+    // Adjusted label radius (increased 15 to 25) for better spacing
+    const baseRadius = r.drawingArea * 1.05 + 25; 
     const base = -Math.PI / 2;
     
     ctx.save();
@@ -135,13 +135,26 @@ const outlinedLabelsPlugin = {
     ctx.textBaseline = 'middle';
     ctx.font = 'italic 18px Candara';
     
-    // Outline color is the selected ability color, fill is white (Corrected)
+    // Outline color is the selected ability color, fill is white
     ctx.strokeStyle = chartColor; 
     ctx.fillStyle = 'white'; 
     ctx.lineWidth = 4;
 
     labels.forEach((label, i) => {
-      const angle = base + (i * 2 * Math.PI / labels.length);
+      let radius = baseRadius;
+      let angle = base + (i * 2 * Math.PI / labels.length);
+      
+      // Fine-tune positioning for Speed and Defense labels
+      if (label === 'Defense') {
+        // Shift Defense (index 4) left (decrease radius slightly and move left)
+        const defenseOffset = 0.05; // Adjust angle slightly counter-clockwise
+        angle -= defenseOffset;
+      } else if (label === 'Speed') {
+        // Shift Speed (index 1) right (increase radius slightly and move right)
+        const speedOffset = 0.05; // Adjust angle slightly clockwise
+        angle += speedOffset;
+      }
+      
       const x = cx + radius * Math.cos(angle);
       const y = cy + radius * Math.sin(angle);
       
@@ -160,7 +173,8 @@ function makeRadar(ctx, maxCap = null, showPoints = true, withBackground = false
       labels: ['Power', 'Speed', 'Trick', 'Recovery', 'Defense'],
       datasets: [{
         data: [0, 0, 0, 0, 0],
-        backgroundColor: 'transparent',
+        // Opacity updated to 0.65
+        backgroundColor: hexToRGBA(chartColor, 0.65), 
         borderColor: chartColor, 
         borderWidth: 2,
         pointBackgroundColor: '#fff',
@@ -241,7 +255,7 @@ updateBtn.addEventListener('click', () => {
   const capped = vals.map(v => Math.min(v, 10)); 
   
   chartColor = colorPicker.value;
-  // CHANGE: Opacity updated to 0.65
+  // Opacity updated to 0.65
   const fill = hexToRGBA(chartColor, 0.65); 
 
   // Update Chart 1 (Main) with uncapped values
@@ -311,7 +325,7 @@ viewBtn.addEventListener('click', () => {
       +defenseInput.value || 0
     ].map(v => Math.min(v, 10));
 
-    // CHANGE: Opacity updated to 0.65
+    // Opacity updated to 0.65
     const fill = hexToRGBA(chartColor, 0.65);
     radar2.data.datasets[0].data = vals;
     radar2.data.datasets[0].borderColor = chartColor;
@@ -330,7 +344,7 @@ downloadBtn.addEventListener('click', () => {
   // Use html2canvas to capture the characterBox
   html2canvas(characterBox, { scale: 2 }).then(canvas => {
     const link = document.createElement('a');
-    // CHANGE: Updated download filename format
+    // Updated download filename format
     link.download = (nameInput.value || 'UnOrdinary_Character') + '_characterChart.png'; 
     link.href = canvas.toDataURL('image/png');
     link.click();
