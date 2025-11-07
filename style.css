@@ -108,7 +108,7 @@ button {
 
 .character-box {
   background: #fff;
-  width: 85vw;
+  width: 64vw; /* 25% less wide */
   height: 80vh;
   border-radius: 15px;
   position: relative;
