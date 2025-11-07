@@ -1,9 +1,13 @@
 let radar1, radar2;
 let radar2Ready = false;
 let chartColor = '#92dfec';
+
+// Centers for both charts
 const CHART1_CENTER = { x: 225, y: 225 };
 const CHART2_CENTER = { x: 250, y: 250 };
-const CHART_SCALE_FACTOR = 0.9;
+
+// Make both charts slightly smaller (0.8 instead of 0.9)
+const CHART_SCALE_FACTOR = 0.8;
 
 function hexToRGBA(hex, alpha) {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -12,6 +16,7 @@ function hexToRGBA(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
+/* === Fix radar scale center and radius === */
 const fixedCenterPlugin = {
   id: 'fixedCenter',
   afterLayout(chart) {
@@ -24,6 +29,7 @@ const fixedCenterPlugin = {
   }
 };
 
+/* === Pentagon background + spokes === */
 const radarBackgroundPlugin = {
   id: 'customPentagonBackground',
   beforeDraw(chart) {
@@ -69,6 +75,7 @@ const radarBackgroundPlugin = {
   }
 };
 
+/* === Outlined Axis Labels (No Cutoff) === */
 const outlinedLabelsPlugin = {
   id: 'outlinedLabels',
   afterDraw(chart) {
@@ -98,6 +105,7 @@ const outlinedLabelsPlugin = {
   }
 };
 
+/* === Create Chart === */
 function makeRadar(ctx, maxCap = null, showPoints = true, withBackground = false, fixedCenter = null) {
   return new Chart(ctx, {
     type: 'radar',
@@ -135,10 +143,12 @@ function makeRadar(ctx, maxCap = null, showPoints = true, withBackground = false
   });
 }
 
+/* === Initialize Chart 1 === */
 window.addEventListener('load', () => {
   radar1 = makeRadar(document.getElementById('radarChart1').getContext('2d'), null, true, false, CHART1_CENTER);
 });
 
+/* === Update Charts === */
 updateBtn.addEventListener('click', () => {
   const vals = [
     +powerInput.value || 0,
@@ -165,6 +175,7 @@ updateBtn.addEventListener('click', () => {
   dispLevel.textContent = levelInput.value || '-';
 });
 
+/* === Overlay Controls === */
 viewBtn.addEventListener('click', () => {
   overlay.classList.remove('hidden');
   overlayImg.src = uploadedImg.src;
@@ -194,6 +205,7 @@ viewBtn.addEventListener('click', () => {
 
 closeBtn.addEventListener('click', () => overlay.classList.add('hidden'));
 
+/* === Download Without Buttons === */
 downloadBtn.addEventListener('click', () => {
   downloadBtn.style.visibility = 'hidden';
   closeBtn.style.visibility = 'hidden';
@@ -207,6 +219,7 @@ downloadBtn.addEventListener('click', () => {
   });
 });
 
+/* === Image Upload === */
 imgInput.addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
