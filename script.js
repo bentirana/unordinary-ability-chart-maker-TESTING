@@ -3,7 +3,7 @@ let radar2Ready = false;
 let chartColor = 'rgb(135, 71, 230)'; // 💜 Default ability color
 
 const CHART1_CENTER = { x: 247, y: 250 };
-const CHART_SCALE_FACTOR = 0.55; 
+const CHART_SCALE_FACTOR = 0.55;
 const CHART_SIZE_MULTIPLIER = 1.0;
 
 function hexToRGBA(hex, alpha) {
@@ -27,7 +27,7 @@ const fixedCenterPlugin = {
       r.xCenter = opt.centerX;
       r.yCenter = opt.centerY;
     }
-    r.drawingArea *= CHART_SCALE_FACTOR; 
+    r.drawingArea *= CHART_SCALE_FACTOR;
   }
 };
 
@@ -96,7 +96,7 @@ const radarBackgroundPlugin = {
   }
 };
 
-/* === OUTLINED AXIS TITLES (5% farther, 3× vertical lift for Speed & Defense) === */
+/* === OUTLINED AXIS TITLES (5 % farther, 10× lift for Speed & Defense) === */
 const outlinedLabelsPlugin = {
   id: 'outlinedLabels',
   afterDraw(chart) {
@@ -110,7 +110,7 @@ const outlinedLabelsPlugin = {
 
     const speedIndex = 1;
     const defenseIndex = 4;
-    const extendedRadius = r.drawingArea * 1.15; // 🔹 5% farther
+    const extendedRadius = r.drawingArea * 1.15; // 🔹 5 % farther
 
     const base = -Math.PI / 2;
 
@@ -133,10 +133,10 @@ const outlinedLabelsPlugin = {
       const x = cx + radiusToUse * Math.cos(angle);
       let y = cy + radiusToUse * Math.sin(angle);
 
-      // Lift Speed & Defense 3× more than before (≈ -18px and -12px)
+      // Large vertical lift
       if (i === 0) y -= 5; // Power
-      if (isOverlayChart && i === 1) y -= 18; // Speed ↑
-      if (isOverlayChart && i === 4) y -= 12; // Defense ↑
+      if (isOverlayChart && i === 1) y -= 60; // Speed ↑
+      if (isOverlayChart && i === 4) y -= 40; // Defense ↑
 
       ctx.strokeText(label, x, y);
       ctx.fillText(label, x, y);
@@ -145,7 +145,7 @@ const outlinedLabelsPlugin = {
   }
 };
 
-/* === SHOW NUMBERS BELOW TITLES (align with 5% shift) === */
+/* === SHOW NUMBERS BELOW TITLES (Power raised total 20 px) === */
 const inputValuePlugin = {
   id: 'inputValuePlugin',
   afterDraw(chart) {
@@ -170,13 +170,14 @@ const inputValuePlugin = {
       let radiusToUse = baseRadius;
 
       if (chart.canvas.id === 'radarChart2' && (i === 1 || i === 4)) {
-        radiusToUse = r.drawingArea * 1.15; // match outward shift for overlay
+        radiusToUse = r.drawingArea * 1.15;
       }
 
       const x = cx + (radiusToUse + offset) * Math.cos(angle);
       let y = cy + (radiusToUse + offset) * Math.sin(angle);
 
-      if (i === 0) y -= 5;
+      // 🔺Power number raised total 20 px
+      if (i === 0) y -= 20;
       if (i === 1) y += 20;
       if (i === 4) y += 20;
 
@@ -205,9 +206,7 @@ function makeRadar(ctx, showPoints = true, withBackground = false, fixedCenter =
     options: {
       responsive: true,
       maintainAspectRatio: true,
-      layout: {
-        padding: { top: 25, bottom: 25, left: 10, right: 10 }
-      },
+      layout: { padding: { top: 25, bottom: 25, left: 10, right: 10 } },
       scales: {
         r: {
           grid: { display: false },
@@ -251,8 +250,7 @@ const levelInput = document.getElementById('levelInput');
 window.addEventListener('load', () => {
   const ctx1 = document.getElementById('radarChart1').getContext('2d');
   radar1 = makeRadar(ctx1, true, false, CHART1_CENTER);
-  
-  colorPicker.value = chartColor; 
+  colorPicker.value = chartColor;
   chartColor = colorPicker.value || chartColor;
   updateCharts();
 });
@@ -363,7 +361,8 @@ downloadBtn.addEventListener('click', () => {
 
   html2canvas(document.getElementById('characterBox'), { scale: 2 }).then(canvas => {
     const link = document.createElement('a');
-    link.download = (nameInput.value || 'UnOrdinary_Character') + '_chart.png';
+    const cleanName = (nameInput.value || 'Unnamed').replace(/\s+/g, '_');
+    link.download = `${cleanName}_CharacterChart.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
 
