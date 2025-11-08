@@ -1,69 +1,500 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UnOrdinary Power Chart Maker</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UnOrdinary Power Chart Maker</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Candara&display=swap" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    /* ===== GLOBAL ===== */
+    body {
+      font-family: Candara, sans-serif;
+      background: #f0f8fc;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    h1 {
+      font-style: italic;
+      margin-bottom: 5px;
+    }
+
+    .subtitle {
+      font-style: italic;
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 15px;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 30px;
+      max-width: 1200px;
+      width: 100%;
+    }
+
+    /* ===== LEFT PANEL ===== */
+    .left {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .upload-img {
+      width: clamp(180px, 25vw, 250px);
+      height: clamp(180px, 25vw, 250px);
+      border: 2px dashed #aaa;
+      border-radius: 10px;
+      object-fit: cover;
+      background-color: #fff;
+    }
+
+    .info-inputs-box {
+      background-color: white;
+      border-radius: 8px;
+      padding: 10px 15px;
+      width: clamp(180px, 25vw, 250px);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .info-inputs-box label {
+      display: flex;
+      justify-content: space-between;
+      font-style: normal;
+      font-weight: bold;
+      color: #000;
+    }
+
+    .inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      width: clamp(200px, 80%, 260px);
+      font-style: normal;
+    }
+
+    .inputs label i {
+      font-style: italic;
+      font-weight: normal;
+    }
+
+    input[type="number"],
+    input[type="text"] {
+      width: 110px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      padding: 4px;
+      font-family: Candara;
+    }
+
+    input[type="color"] {
+      width: 60px;
+      height: 35px;
+      border: none;
+      cursor: pointer;
+      background: none;
+    }
+
+    button {
+      padding: 6px 12px;
+      background-color: #92dfec;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: Candara;
+      font-weight: normal;
+    }
+
+    button:hover {
+      background-color: #6db5c0;
+      color: white;
+    }
+
+    .chart-area {
+      width: clamp(280px, 38vw, 500px);
+      height: clamp(280px, 38vw, 500px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+      background: none;
+    }
+
+    /* ===== OVERLAY ===== */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .character-box {
+      background: #fff;
+      border-radius: 15px;
+      width: 65vw;
+      height: 80vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      position: relative;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 28px;
+      border: none;
+      background: none;
+      cursor: pointer;
+    }
+
+    .image-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .overlay-img {
+      width: 320px;
+      height: 320px;
+      border: 3px solid #184046;
+      border-radius: 6px;
+      object-fit: cover;
+    }
+
+    .text-box {
+      position: absolute;
+      bottom: -1px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      border: 3px solid #184046;
+      width: 60%;
+      text-align: center;
+      padding: 8px;
+      font-family: Candara;
+      font-size: 18px;
+      color: #000;
+    }
+
+    .overlay-chart {
+      width: clamp(280px, 38vw, 450px);
+      height: clamp(280px, 38vw, 450px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #downloadBtn {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: #92dfec;
+      border: none;
+      border-radius: 5px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-family: Candara;
+      font-weight: normal;
+      transition: background-color 0.2s;
+    }
+
+    #downloadBtn:hover {
+      background-color: #6db5c0;
+      color: white;
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <div class="left">
-      <h1>UnOrdinary Power Chart Maker</h1>
-      <div class="subtitle">By Atlas Skies</div>
+  <div class="container">
+    <div class="left">
+      <h1>UnOrdinary Power Chart Maker</h1>
+      <div class="subtitle">By Atlas Skies</div>
 
-      <input type="file" accept="image/*" id="imgInput">
-      <img id="uploadedImg" class="upload-img" alt="Uploaded Image"
-           src="https://placehold.co/250x250/cccccc/333333?text=Upload+Image">
+      <input type="file" accept="image/*" id="imgInput" />
+      <img id="uploadedImg" class="upload-img" alt="Uploaded Image" src="https://placehold.co/250x250/cccccc/333333?text=Upload+Image" />
 
-      <div class="info-inputs-box">
-        <label><b>Name:</b> <input type="text" id="nameInput"></label>
-        <label><b>Ability:</b> <input type="text" id="abilityInput"></label>
-        <label><b>Level:</b> <input type="text" id="levelInput"></label>
-      </div>
+      <div class="info-inputs-box">
+        <label><b>Name:</b> <input type="text" id="nameInput"></label>
+        <label><b>Ability:</b> <input type="text" id="abilityInput"></label>
+        <label><b>Level:</b> <input type="text" id="levelInput"></label>
+      </div>
 
-      <div class="inputs">
-        <label><i>Power:</i> <input type="number" id="powerInput" step="0.1" min="0" max="10"></label>
-        <label><i>Speed:</i> <input type="number" id="speedInput" step="0.1" min="0" max="10"></label>
-        <label><i>Trick:</i> <input type="number" id="trickInput" step="0.1" min="0" max="10"></label>
-        <label><i>Recovery:</i> <input type="number" id="recoveryInput" step="0.1" min="0" max="10"></label>
-        <label><i>Defense:</i> <input type="number" id="defenseInput" step="0.1" min="0" max="10"></label>
-        <label><b>Ability Color:</b> <input type="color" id="colorPicker" value="#92dfec"></label>
-        <button id="viewBtn">View Character Chart</button>
-      </div>
-    </div>
+      <div class="inputs">
+        <label><i>Power:</i> <input type="number" id="powerInput" step="0.1" min="0"></label>
+        <label><i>Speed:</i> <input type="number" id="speedInput" step="0.1" min="0"></label>
+        <label><i>Trick:</i> <input type="number" id="trickInput" step="0.1" min="0"></label>
+        <label><i>Recovery:</i> <input type="number" id="recoveryInput" step="0.1" min="0"></label>
+        <label><i>Defense:</i> <input type="number" id="defenseInput" step="0.1" min="0"></label>
+        <label><b>Ability Color:</b> <input type="color" id="colorPicker" value="#92dfec"></label>
+        <button id="viewBtn">View Character Chart</button>
+      </div>
+    </div>
 
-    <div class="chart-area">
-      <canvas id="radarChart1"></canvas>
-    </div>
-  </div>
+    <div class="chart-area">
+      <canvas id="radarChart1"></canvas>
+    </div>
+  </div>
 
-  <div id="overlay" class="overlay hidden">
-    <div id="characterBox" class="character-box">
-      <button id="closeBtn" class="close-btn">×</button>
+  <div id="overlay" class="overlay hidden">
+    <div id="characterBox" class="character-box">
+      <button id="closeBtn" class="close-btn">×</button>
 
-      <div class="image-section">
-        <img id="overlayImg" class="overlay-img" alt="Character Image">
-        <div class="text-box">
-            <div class="text-content">
-                <p><b>Name:</b> <span id="overlayName">-</span></p>
-                <p><b>Ability:</b> <span id="overlayAbility">-</span></p>
-                <p><b>Level:</b> <span id="overlayLevel">-</span></p>
-            </div>
-        </div>
-      </div>
+      <div class="image-section">
+        <img id="overlayImg" class="overlay-img" alt="Character Image">
+        <div class="text-box">
+          <p><b>Name:</b> <span id="overlayName">-</span></p>
+          <p><b>Ability:</b> <span id="overlayAbility">-</span></p>
+          <p><b>Level:</b> <span id="overlayLevel">-</span></p>
+        </div>
+      </div>
 
-      <div class="overlay-chart">
-        <canvas id="radarChart2"></canvas>
-      </div>
+      <div class="overlay-chart">
+        <canvas id="radarChart2"></canvas>
+      </div>
 
-      <div id="subtleSignature" class="subtle-signature"></div>
-      <button id="downloadBtn">Download Character Chart</button>
-    </div>
-  </div>
+      <button id="downloadBtn">Download Character Chart</button>
+    </div>
+  </div>
 
-  <script src="script.js"></script>
-</body>
-</html>
+  <script>
+    let radar1, radar2;
+    let chartColor = '#92dfec';
+
+    function hexToRGBA(hex, alpha) {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+
+    /* === LABEL PLUGINS === */
+    const mainLabelsPlugin = {
+      id: 'mainLabels',
+      afterDraw(chart) {
+        if (chart.canvas.id !== 'radarChart1') return;
+        const r = chart.scales.r;
+        const ctx = chart.ctx;
+        const labels = chart.data.labels;
+        const values = getStatValues();
+        const base = -Math.PI / 2;
+        const radius = r.drawingArea * 0.92;
+
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        for (let i = 0; i < labels.length; i++) {
+          const ang = base + (i * 2 * Math.PI / labels.length);
+          const x = r.xCenter + radius * Math.cos(ang);
+          const y = r.yCenter + radius * Math.sin(ang);
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = chartColor;
+          ctx.fillStyle = 'white';
+          ctx.font = '18px Candara';
+          ctx.strokeText(labels[i], x, y - 6);
+          ctx.fillText(labels[i], x, y - 6);
+          const v = isNaN(values[i]) ? 0 : values[i];
+          ctx.font = 'italic 14px Candara';
+          ctx.fillStyle = '#000';
+          ctx.fillText(`(${v.toFixed(1)})`, x, y + 12);
+        }
+        ctx.restore();
+      }
+    };
+
+    const overlayLabelsPlugin = {
+      id: 'overlayLabels',
+      afterDraw(chart) {
+        if (chart.canvas.id !== 'radarChart2') return;
+        const r = chart.scales.r;
+        const ctx = chart.ctx;
+        const labels = chart.data.labels;
+        const base = -Math.PI / 2;
+        const radius = r.drawingArea * 0.95;
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '18px Candara';
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = chartColor;
+        ctx.fillStyle = 'white';
+        for (let i = 0; i < labels.length; i++) {
+          const ang = base + (i * 2 * Math.PI / labels.length);
+          const x = r.xCenter + radius * Math.cos(ang);
+          const y = r.yCenter + radius * Math.sin(ang);
+          ctx.strokeText(labels[i], x, y);
+          ctx.fillText(labels[i], x, y);
+        }
+        ctx.restore();
+      }
+    };
+
+    const overlayBackgroundPlugin = {
+      id: 'overlayBackground',
+      beforeDraw(chart) {
+        if (chart.canvas.id !== 'radarChart2') return;
+        const r = chart.scales.r;
+        const ctx = chart.ctx;
+        const cx = r.xCenter, cy = r.yCenter;
+        const N = chart.data.labels.length;
+        const start = -Math.PI / 2;
+        const radius = r.drawingArea * 0.9;
+        const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+        grd.addColorStop(0, '#92dfec');
+        grd.addColorStop(0.4, '#f8fcff');
+        grd.addColorStop(1, '#f8fcff');
+        ctx.save();
+        ctx.beginPath();
+        for (let i = 0; i < N; i++) {
+          const a = start + i * 2 * Math.PI / N;
+          const x = cx + radius * Math.cos(a);
+          const y = cy + radius * Math.sin(a);
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = grd;
+        ctx.fill();
+        ctx.strokeStyle = '#184046';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.restore();
+      }
+    };
+
+    Chart.register(mainLabelsPlugin, overlayLabelsPlugin, overlayBackgroundPlugin);
+
+    function makeRadar(ctx, overlay = false) {
+      const color = document.getElementById('colorPicker').value || '#92dfec';
+      return new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: ['Power', 'Speed', 'Trick', 'Recovery', 'Defense'],
+          datasets: [{
+            data: [0, 0, 0, 0, 0],
+            backgroundColor: hexToRGBA(color, 0.70),
+            borderColor: color,
+            borderWidth: 2,
+            pointRadius: overlay ? 0 : 4,
+            pointHoverRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: { padding: 22 },
+          scales: {
+            r: {
+              beginAtZero: true,
+              max: overlay ? 10 : undefined,
+              suggestedMax: overlay ? 10 : undefined,
+              ticks: { display: false },
+              grid: { display: false },
+              angleLines: { color: '#6db5c0' },
+              pointLabels: { display: false }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false }
+          }
+        },
+        plugins: overlay ? [overlayBackgroundPlugin, overlayLabelsPlugin] : [mainLabelsPlugin]
+      });
+    }
+
+    const inputs = ['powerInput', 'speedInput', 'trickInput', 'recoveryInput', 'defenseInput'];
+    const colorPicker = document.getElementById('colorPicker');
+    const viewBtn = document.getElementById('viewBtn');
+    const overlay = document.getElementById('overlay');
+    const closeBtn = document.getElementById('closeBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const uploadedImg = document.getElementById('uploadedImg');
+    const imgInput = document.getElementById('imgInput');
+
+    window.addEventListener('load', () => {
+      const ctx1 = document.getElementById('radarChart1').getContext('2d');
+      radar1 = makeRadar(ctx1, false);
+      updateCharts();
+    });
+
+    function getStatValues() {
+      return inputs.map(id => +document.getElementById(id).value || 0);
+    }
+
+    function updateCharts() {
+      const raw = getStatValues();
+      const capped = raw.map(v => Math.min(v, 10));
+      chartColor = colorPicker.value;
+      const fill = hexToRGBA(chartColor, 0.70);
+      const maxVal = Math.max(10, ...raw);
+      radar1.options.scales.r.max = maxVal * 1.1;
+      radar1.data.datasets[0].data = raw;
+      radar1.data.datasets[0].borderColor = chartColor;
+      radar1.data.datasets[0].backgroundColor = fill;
+      radar1.update();
+      if (radar2) {
+        radar2.data.datasets[0].data = capped;
+        radar2.data.datasets[0].borderColor = chartColor;
+        radar2.data.datasets[0].backgroundColor = fill;
+        radar2.update();
+      }
+    }
+
+    inputs.forEach(id => document.getElementById(id).addEventListener('input', updateCharts));
+    colorPicker.addEventListener('input', updateCharts);
+
+    viewBtn.addEventListener('click', () => {
+      overlay.classList.remove('hidden');
+      document.getElementById('overlayImg').src = uploadedImg.src;
+      document.getElementById('overlayName').textContent = document.getElementById('nameInput').value || '-';
+      document.getElementById('overlayAbility').textContent = document.getElementById('abilityInput').value || '-';
+      document.getElementById('overlayLevel').textContent = document.getElementById('levelInput').value || '-';
+      const ctx2 = document.getElementById('radarChart2').getContext('2d');
+      if (radar2) radar2.destroy();
+      radar2 = makeRadar(ctx2, true);
+      updateCharts();
+    });
+
+    closeBtn.addEventListener('click', () => overlay.classList.add('hidden'));
+
+    downloadBtn.addEventListener('click', () => {
+      downloadBtn.style.visibility = 'hidden';
+      closeBtn.style.visibility = 'hidden';
+      html2canvas(document.getElementById('characterBox'), { scale: 2 }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `${document.getElementById('nameInput').value ||
