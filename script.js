@@ -96,7 +96,7 @@ const radarBackgroundPlugin = {
   }
 };
 
-/* === OUTLINED AXIS TITLES === */
+/* === OUTLINED AXIS TITLES (5% farther, 3× vertical lift for Speed & Defense) === */
 const outlinedLabelsPlugin = {
   id: 'outlinedLabels',
   afterDraw(chart) {
@@ -104,8 +104,14 @@ const outlinedLabelsPlugin = {
     const r = chart.scales.r;
     const labels = chart.data.labels;
     const cx = r.xCenter, cy = r.yCenter;
-    // 🟢 CHANGE 2: Increase radius for label placement to 1.1 (was 1.05)
-    const baseRadius = r.drawingArea * 1.1; 
+
+    const isOverlayChart = chart.canvas.id === 'radarChart2';
+    let baseRadius = r.drawingArea * 1.1;
+
+    const speedIndex = 1;
+    const defenseIndex = 4;
+    const extendedRadius = r.drawingArea * 1.15; // 🔹 5% farther
+
     const base = -Math.PI / 2;
 
     ctx.save();
@@ -118,17 +124,19 @@ const outlinedLabelsPlugin = {
 
     labels.forEach((label, i) => {
       let angle = base + (i * 2 * Math.PI / labels.length);
-      const x = cx + baseRadius * Math.cos(angle);
-      let y = cy + baseRadius * Math.sin(angle);
+      let radiusToUse = baseRadius;
 
-      // Adjust Y position for the first label ('Power') 
-      if (i === 0) {
-        y -= 5; 
+      if (isOverlayChart && (i === speedIndex || i === defenseIndex)) {
+        radiusToUse = extendedRadius;
       }
-      // Adjust Y position for the last label ('Defense') 
-      if (i === 4) {
-         y += 3; 
-      }
+
+      const x = cx + radiusToUse * Math.cos(angle);
+      let y = cy + radiusToUse * Math.sin(angle);
+
+      // Lift Speed & Defense 3× more than before (≈ -18px and -12px)
+      if (i === 0) y -= 5; // Power
+      if (isOverlayChart && i === 1) y -= 18; // Speed ↑
+      if (isOverlayChart && i === 4) y -= 12; // Defense ↑
 
       ctx.strokeText(label, x, y);
       ctx.fillText(label, x, y);
@@ -137,7 +145,7 @@ const outlinedLabelsPlugin = {
   }
 };
 
-/* === SHOW NUMBERS BELOW TITLES (MAIN CHART ONLY) === */
+/* === SHOW NUMBERS BELOW TITLES (align with 5% shift) === */
 const inputValuePlugin = {
   id: 'inputValuePlugin',
   afterDraw(chart) {
@@ -147,10 +155,9 @@ const inputValuePlugin = {
     const data = chart.data.datasets[0].data;
     const labels = chart.data.labels;
     const cx = r.xCenter, cy = r.yCenter;
-    // 🟢 CHANGE 2: Increase radius for value placement to 1.1 (was 1.05)
     const baseRadius = r.drawingArea * 1.1;
-    const offset = 20;
     const base = -Math.PI / 2;
+    const offset = 20;
 
     ctx.save();
     ctx.font = '15px Candara';
@@ -160,21 +167,18 @@ const inputValuePlugin = {
 
     labels.forEach((label, i) => {
       const angle = base + (i * 2 * Math.PI / labels.length);
-      const x = cx + (baseRadius + offset) * Math.cos(angle);
-      let y = cy + (baseRadius + offset) * Math.sin(angle);
-      
-      // Adjust Y position for the first label value ('Power')
-      if (i === 0) {
-        y -= 5; 
+      let radiusToUse = baseRadius;
+
+      if (chart.canvas.id === 'radarChart2' && (i === 1 || i === 4)) {
+        radiusToUse = r.drawingArea * 1.15; // match outward shift for overlay
       }
-      
-      // Move Speed (i=1) and Defense (i=4) numbers down by 20 pixels
-      if (i === 1) { // Speed
-          y += 20;
-      }
-      if (i === 4) { // Defense
-          y += 20;
-      }
+
+      const x = cx + (radiusToUse + offset) * Math.cos(angle);
+      let y = cy + (radiusToUse + offset) * Math.sin(angle);
+
+      if (i === 0) y -= 5;
+      if (i === 1) y += 20;
+      if (i === 4) y += 20;
 
       ctx.fillText(`(${data[i] || 0})`, x, y);
     });
@@ -202,13 +206,7 @@ function makeRadar(ctx, showPoints = true, withBackground = false, fixedCenter =
       responsive: true,
       maintainAspectRatio: true,
       layout: {
-          padding: {
-              // 🟢 CHANGE 1: Increase padding to give the labels more room (was 15)
-              top: 25, 
-              bottom: 25, 
-              left: 10,
-              right: 10,
-          }
+        padding: { top: 25, bottom: 25, left: 10, right: 10 }
       },
       scales: {
         r: {
@@ -255,7 +253,6 @@ window.addEventListener('load', () => {
   radar1 = makeRadar(ctx1, true, false, CHART1_CENTER);
   
   colorPicker.value = chartColor; 
-  
   chartColor = colorPicker.value || chartColor;
   updateCharts();
 });
@@ -326,7 +323,6 @@ viewBtn.addEventListener('click', () => {
     overlayChart.style.height = `${targetSize}px`;
     overlayChart.style.width = `${targetSize}px`;
 
-    // === WATERMARK (smaller + more transparent) ===
     const existingWatermark = document.querySelector('.image-section .watermark-image');
     if (!existingWatermark) {
       const wm = document.createElement('div');
@@ -338,8 +334,8 @@ viewBtn.addEventListener('click', () => {
         left: '10px',
         fontFamily: 'Candara',
         fontWeight: 'bold',
-        fontSize: '6px', 
-        color: 'rgba(0,0,0,0.15)', 
+        fontSize: '6px',
+        color: 'rgba(0,0,0,0.15)',
         pointerEvents: 'none',
         zIndex: '2'
       });
