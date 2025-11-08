@@ -233,3 +233,56 @@ button:hover {
   cursor: pointer;
   font-weight: bold;
 }
+
+/* === MOBILE LAYOUT FOR VIEW CHARACTER CHART (Dynamic Height) === */
+@media (max-width: 768px) {
+  .character-box {
+    flex-direction: column;
+    width: 90vw;
+    max-height: 90vh;
+    padding: 15px;
+    gap: 20px;
+    overflow-y: auto;
+    justify-content: flex-start;
+    align-items: center;
+    box-sizing: border-box;
+  }
+
+  .overlay-img {
+    width: 70vw;
+    height: auto;
+    max-height: 35vh;
+    object-fit: cover;
+    border: 2px solid #493e3b;
+    border-radius: 8px;
+  }
+
+  .text-box {
+    position: relative;
+    bottom: auto;
+    margin-top: 8px;
+    width: 80%;
+    text-align: center;
+  }
+
+  .overlay-chart {
+    width: 75vw;
+    height: 75vw;
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  #downloadBtn {
+    position: static;
+    align-self: center;
+    margin-top: 10px;
+  }
+
+  .close-btn {
+    top: 8px;
+    right: 12px;
+    font-size: 26px;
+  }
+}
