@@ -8,7 +8,7 @@ function hexToRGBA(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-// Pentagon background + spokes
+// Pentagon background + gradient + border
 const radarBackgroundPlugin = {
   id: 'customBackground',
   beforeDatasetsDraw(chart) {
@@ -20,10 +20,11 @@ const radarBackgroundPlugin = {
     const N = chart.data.labels.length;
     const start = -Math.PI / 2;
 
+    // Gradient background: center #92dfec → 40% #f8fcff
     const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-    gradient.addColorStop(0, '#f8fcff');
-    gradient.addColorStop(0.33, chartColor);
-    gradient.addColorStop(1, chartColor);
+    gradient.addColorStop(0, '#92dfec');
+    gradient.addColorStop(0.4, '#f8fcff');
+    gradient.addColorStop(1, '#f8fcff');
 
     ctx.save();
     ctx.beginPath();
@@ -38,22 +39,7 @@ const radarBackgroundPlugin = {
     ctx.fill();
     ctx.restore();
 
-    // Spokes
-    ctx.save();
-    ctx.beginPath();
-    for (let i = 0; i < N; i++) {
-      const a = start + (i * 2 * Math.PI / N);
-      const x = cx + radius * Math.cos(a);
-      const y = cy + radius * Math.sin(a);
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(x, y);
-    }
-    ctx.strokeStyle = '#35727d';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.restore();
-
-    // Pentagon outline
+    // Outer pentagon border (over everything)
     ctx.save();
     ctx.beginPath();
     for (let i = 0; i < N; i++) {
@@ -70,7 +56,7 @@ const radarBackgroundPlugin = {
   }
 };
 
-function makeRadar(ctx, withBackground = false) {
+function makeRadar(ctx, withBackground = false, showNumbers = false) {
   return new Chart(ctx, {
     type: 'radar',
     data: {
@@ -92,10 +78,16 @@ function makeRadar(ctx, withBackground = false) {
         r: {
           min: 0,
           max: 10,
-          ticks: { display: false },
+          ticks: {
+            display: showNumbers,
+            font: { family: 'Candara', size: 12 }
+          },
           grid: { display: false },
           angleLines: { color: '#6db5c0' },
-          pointLabels: { font: { size: 16 } }
+          pointLabels: {
+            font: { family: 'Candara', size: 16 },
+            color: '#333'
+          }
         }
       },
       plugins: { legend: { display: false } }
@@ -107,7 +99,6 @@ function makeRadar(ctx, withBackground = false) {
 const inputs = ['powerInput', 'speedInput', 'trickInput', 'recoveryInput', 'defenseInput'];
 const colorPicker = document.getElementById('colorPicker');
 const viewBtn = document.getElementById('viewBtn');
-const updateBtn = document.getElementById('updateBtn');
 const overlay = document.getElementById('overlay');
 const closeBtn = document.getElementById('closeBtn');
 const downloadBtn = document.getElementById('downloadBtn');
@@ -117,22 +108,35 @@ const imgInput = document.getElementById('imgInput');
 window.addEventListener('load', () => {
   const ctx1 = document.getElementById('radarChart1').getContext('2d');
   radar1 = makeRadar(ctx1);
-  updateChart();
+  updateCharts();
 });
 
-function updateChart() {
-  const vals = inputs.map(id => +document.getElementById(id).value || 0);
+function getStatValues() {
+  return inputs.map(id => +document.getElementById(id).value || 0);
+}
+
+function updateCharts() {
+  const vals = getStatValues();
   chartColor = colorPicker.value;
   const fill = hexToRGBA(chartColor, 0.75);
   radar1.data.datasets[0].data = vals;
   radar1.data.datasets[0].backgroundColor = fill;
   radar1.data.datasets[0].borderColor = chartColor;
   radar1.update();
+
+  if (radar2) {
+    radar2.data.datasets[0].data = vals;
+    radar2.data.datasets[0].backgroundColor = fill;
+    radar2.data.datasets[0].borderColor = chartColor;
+    radar2.update();
+  }
 }
 
-inputs.forEach(id => document.getElementById(id).addEventListener('input', updateChart));
-colorPicker.addEventListener('input', updateChart);
-updateBtn.addEventListener('click', updateChart);
+inputs.forEach(id => document.getElementById(id).addEventListener('input', updateCharts));
+colorPicker.addEventListener('input', updateCharts);
+['nameInput', 'abilityInput', 'levelInput'].forEach(id =>
+  document.getElementById(id).addEventListener('input', updateCharts)
+);
 
 viewBtn.addEventListener('click', () => {
   overlay.classList.remove('hidden');
@@ -144,12 +148,8 @@ viewBtn.addEventListener('click', () => {
 
   const ctx2 = document.getElementById('radarChart2').getContext('2d');
   radar2?.destroy();
-  radar2 = makeRadar(ctx2, true);
-  const vals = inputs.map(id => Math.min(+document.getElementById(id).value || 0, 10));
-  radar2.data.datasets[0].data = vals;
-  radar2.data.datasets[0].backgroundColor = hexToRGBA(chartColor, 0.75);
-  radar2.data.datasets[0].borderColor = chartColor;
-  radar2.update();
+  radar2 = makeRadar(ctx2, true, true);
+  updateCharts();
 });
 
 closeBtn.addEventListener('click', () => overlay.classList.add('hidden'));
