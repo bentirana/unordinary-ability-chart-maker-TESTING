@@ -10,7 +10,7 @@ function hexToRGBA(hex, alpha) {
 
 /* === PLUGINS === */
 
-// Axis labels + values for MAIN chart
+// Axis labels + values for MAIN chart (radarChart1)
 const outlinedLabelsPlugin = {
   id: 'outlinedLabels',
   afterDraw(chart) {
@@ -18,10 +18,9 @@ const outlinedLabelsPlugin = {
     const ctx = chart.ctx;
     const r = chart.scales.r;
     const labels = chart.data.labels;
-    // FIX: Get the true input values (no cap)
     const values = getStatValues(); 
     // Adjust base radius to give space for new label position
-    const baseRadius = r.drawingArea * 1.05; 
+    const baseRadius = r.drawingArea * 1.15; 
     const base = -Math.PI / 2;
 
     ctx.save();
@@ -48,16 +47,53 @@ const outlinedLabelsPlugin = {
 
       // --- 2. Draw Value in Parentheses (Black text, italic, UNDER title) ---
       ctx.font = 'italic 14px Candara';
-      ctx.fillStyle = '#000000'; // FIX: Black text
+      ctx.fillStyle = '#000000'; 
       ctx.lineWidth = 1; // Reset line width for black fill text
       const val = isNaN(values[i]) ? 0.0 : values[i].toFixed(1);
       // Position value slightly below the center point
-      ctx.fillText(`(${val})`, x, y + 15); // FIX: Positioned 20px lower than title
+      ctx.fillText(`(${val})`, x, y + 15); 
     });
 
     ctx.restore();
   }
 };
+
+// Simple Axis labels for OVERLAY chart (radarChart2)
+const overlayLabelsPlugin = {
+    id: 'overlayLabels',
+    afterDraw(chart) {
+        if (chart.canvas.id !== 'radarChart2') return;
+        const ctx = chart.ctx;
+        const r = chart.scales.r;
+        const labels = chart.data.labels;
+        const baseRadius = r.drawingArea * 1.15; 
+        const base = -Math.PI / 2;
+
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '18px Candara';
+        ctx.fillStyle = 'white';
+        ctx.strokeStyle = chartColor;
+        ctx.lineWidth = 4;
+
+        labels.forEach((label, i) => {
+            let a = base + (i * 2 * Math.PI / labels.length);
+            if (label === 'Defense') { a -= 0.04; } 
+            else if (label === 'Speed') { a += 0.04; }
+
+            const x = r.xCenter + baseRadius * Math.cos(a);
+            const y = r.yCenter + baseRadius * Math.sin(a);
+            
+            // Draw simple white label with colored stroke
+            ctx.strokeText(label, x, y);
+            ctx.fillText(label, x, y);
+        });
+
+        ctx.restore();
+    }
+};
+
 
 // Pentagon gradient + border for OVERLAY chart
 const radarBackgroundPlugin = {
@@ -71,11 +107,10 @@ const radarBackgroundPlugin = {
     const radius = r.drawingArea; 
     const N = chart.data.labels.length;
     const start = -Math.PI / 2;
-    const outerRadius = radius * 0.9; // Ensures custom drawing stays within bounds
+    const outerRadius = radius * 0.95; 
 
     // Gradient from center → edge
     const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, outerRadius);
-    // FIX: Ensure gradient colors align with intended UnOrdinary style
     grad.addColorStop(0, '#f8fcff');
     grad.addColorStop(0.4, chartColor); 
     grad.addColorStop(1, chartColor);
@@ -122,8 +157,8 @@ const radarBackgroundPlugin = {
   }
 };
 
-// Register both plugins globally
-Chart.register(outlinedLabelsPlugin, radarBackgroundPlugin);
+// Register all plugins
+Chart.register(outlinedLabelsPlugin, radarBackgroundPlugin, overlayLabelsPlugin);
 
 /* === CREATE RADAR FUNCTION === */
 function makeRadar(ctx, isOverlay = false) {
@@ -139,14 +174,14 @@ function makeRadar(ctx, isOverlay = false) {
         borderColor: currentColor,
         borderWidth: 2,
         pointRadius: isOverlay ? 0 : 4,
-        pointHoverRadius: isOverlay ? 5 : 0, // FIX: Enable hover
+        pointHoverRadius: isOverlay ? 5 : 0, 
         pointHoverBorderWidth: isOverlay ? 2 : 0 
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      layout: { padding: 35 },
+      layout: { padding: isOverlay ? 35 : 45 }, 
       elements: { line: { tension: 0 } },
       scales: {
         r: {
@@ -155,25 +190,22 @@ function makeRadar(ctx, isOverlay = false) {
           ticks: { display: false },
           grid: { display: false },
           angleLines: { color: '#6db5c0' },
-          pointLabels: { display: false }
+          pointLabels: { display: false } 
         }
       },
       plugins: {
         legend: { display: false },
-        // FIX: Enable tooltip for overlay chart
         tooltip: {
             enabled: isOverlay,
             callbacks: {
                 label: function(context) {
-                    // Display score as "Stat: X.X"
                     return context.label + ': ' + context.formattedValue;
                 }
             }
         }
       }
     },
-    // FIX: Ensure the correct plugin is used for each chart
-    plugins: isOverlay ? [radarBackgroundPlugin] : [outlinedLabelsPlugin]
+    plugins: isOverlay ? [radarBackgroundPlugin, overlayLabelsPlugin] : [outlinedLabelsPlugin]
   });
 }
 
@@ -201,18 +233,18 @@ function getStatValues() {
 
 function updateCharts() {
   const vals = getStatValues();
-  const cappedVals = vals.map(v => Math.min(v, 10)); // Caps at 10 for the visual display boundary
+  // Capped at 10 for the visual display boundary in the overlay chart
+  const cappedVals = vals.map(v => Math.min(v, 10)); 
   chartColor = colorPicker.value;
   const fill = hexToRGBA(chartColor, 0.7);
 
-  // Main chart
-  // FIX: Set data to VALS (true input) so custom labels can display the correct number
+  // Main chart (radar1)
   radar1.data.datasets[0].data = vals; 
   radar1.data.datasets[0].borderColor = chartColor;
   radar1.data.datasets[0].backgroundColor = fill;
   radar1.update();
 
-  // Overlay chart (capped)
+  // Overlay chart (radar2)
   if (radar2) {
     radar2.data.datasets[0].data = cappedVals;
     radar2.data.datasets[0].borderColor = chartColor;
@@ -237,7 +269,6 @@ viewBtn.addEventListener('click', () => {
 
   const ctx2 = document.getElementById('radarChart2').getContext('2d');
   if (radar2) radar2.destroy();
-  // FIX: Re-create the overlay chart every time to ensure context is valid
   radar2 = makeRadar(ctx2, true); 
   updateCharts();
 });
