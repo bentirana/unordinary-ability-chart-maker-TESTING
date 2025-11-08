@@ -8,10 +8,58 @@ function hexToRGBA(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
+/* === Chart.js Plugins === */
+
+// Outlined Axis Labels (Colored Outline, White Fill)
+const outlinedLabelsPlugin = {
+  id: 'outlinedLabels',
+  afterDraw(chart) {
+    if (chart.canvas.id === 'radarChart2' || chart.canvas.id === 'radarChart1') {
+      const ctx = chart.ctx;
+      const r = chart.scales.r;
+      const labels = chart.data.labels;
+      const cx = r.xCenter;
+      const cy = r.yCenter;
+
+      const baseRadius = r.drawingArea * 1.1 + 10;
+      const base = -Math.PI / 2;
+
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = 'italic 18px Candara';
+
+      ctx.strokeStyle = chartColor; // Uses global chartColor
+      ctx.fillStyle = 'white';
+      ctx.lineWidth = 4;
+
+      labels.forEach((label, i) => {
+        let angle = base + (i * 2 * Math.PI / labels.length);
+
+        if (label === 'Defense') {
+          angle -= 0.08;
+        } else if (label === 'Speed') {
+          angle += 0.05;
+        }
+
+        const x = cx + baseRadius * Math.cos(angle);
+        const y = cy + baseRadius * Math.sin(angle);
+
+        ctx.strokeText(label, x, y);
+        ctx.fillText(label, x, y);
+      });
+      ctx.restore();
+    }
+  }
+};
+
+
 // Pentagon background + gradient + border
 const radarBackgroundPlugin = {
   id: 'customBackground',
-  beforeDatasetsDraw(chart) {
+  beforeDraw(chart, args, options) {
+    if (chart.canvas.id !== 'radarChart2') return;
+
     const ctx = chart.ctx;
     const r = chart.scales.r;
     const cx = r.xCenter;
@@ -20,13 +68,18 @@ const radarBackgroundPlugin = {
     const N = chart.data.labels.length;
     const start = -Math.PI / 2;
 
-    // Gradient background: center #92dfec → 40% #f8fcff
+    // Gradient Flip: outer #f8fcff (light) → center chartColor (selected color)
     const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-    gradient.addColorStop(0, '#92dfec');
-    gradient.addColorStop(0.4, '#f8fcff');
+    const currentColor = window.chartColor || '#92dfec';
+
+    // Flipped gradient stops
+    gradient.addColorStop(0, currentColor);
+    gradient.addColorStop(0.4, currentColor);
     gradient.addColorStop(1, '#f8fcff');
 
     ctx.save();
+
+    // Draw Pentagon Fill
     ctx.beginPath();
     for (let i = 0; i < N; i++) {
       const a = start + (i * 2 * Math.PI / N);
@@ -37,15 +90,39 @@ const radarBackgroundPlugin = {
     ctx.closePath();
     ctx.fillStyle = gradient;
     ctx.fill();
-    ctx.restore();
 
-    // Outer pentagon border (over everything)
-    ctx.save();
+    // Draw Spokes
     ctx.beginPath();
     for (let i = 0; i < N; i++) {
       const a = start + (i * 2 * Math.PI / N);
       const x = cx + radius * Math.cos(a);
       const y = cy + radius * Math.sin(a);
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = '#35727d';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.restore();
+  },
+  afterDatasetsDraw(chart, args, options) {
+    if (chart.canvas.id !== 'radarChart2') return;
+
+    const ctx = chart.ctx;
+    const r = chart.scales.r;
+    const radius = r.drawingArea;
+    const N = chart.data.labels.length;
+    const start = -Math.PI / 2;
+
+    ctx.save();
+
+    // Outer pentagon border
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const a = start + (i * 2 * Math.PI / N);
+      const x = r.xCenter + radius * Math.cos(a);
+      const y = r.yCenter + radius * Math.sin(a);
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
     ctx.closePath();
@@ -56,19 +133,23 @@ const radarBackgroundPlugin = {
   }
 };
 
-function makeRadar(ctx, withBackground = false, showNumbers = false) {
+Chart.register(radarBackgroundPlugin, outlinedLabelsPlugin);
+
+function makeRadar(ctx, isOverlayChart = false) {
+  const currentColor = document.getElementById('colorPicker').value || '#92dfec';
+
   return new Chart(ctx, {
     type: 'radar',
     data: {
       labels: ['Power', 'Speed', 'Trick', 'Recovery', 'Defense'],
       datasets: [{
         data: [0, 0, 0, 0, 0],
-        backgroundColor: hexToRGBA(chartColor, 0.75),
-        borderColor: chartColor,
+        backgroundColor: hexToRGBA(currentColor, 0.75),
+        borderColor: currentColor,
         borderWidth: 2,
         pointRadius: 4,
         pointBackgroundColor: '#fff',
-        pointBorderColor: chartColor
+        pointBorderColor: currentColor
       }]
     },
     options: {
@@ -79,20 +160,23 @@ function makeRadar(ctx, withBackground = false, showNumbers = false) {
           min: 0,
           max: 10,
           ticks: {
-            display: showNumbers,
-            font: { family: 'Candara', size: 12 }
+            // FIX: Remove numbers completely from the radar axis
+            display: false,
           },
           grid: { display: false },
           angleLines: { color: '#6db5c0' },
           pointLabels: {
             font: { family: 'Candara', size: 16 },
-            color: '#333'
+            color: 'transparent'
           }
         }
       },
-      plugins: { legend: { display: false } }
+      plugins: {
+        legend: { display: false },
+        customBackground: { enabled: isOverlayChart }
+      }
     },
-    plugins: withBackground ? [radarBackgroundPlugin] : []
+    plugins: []
   });
 }
 
@@ -107,7 +191,7 @@ const imgInput = document.getElementById('imgInput');
 
 window.addEventListener('load', () => {
   const ctx1 = document.getElementById('radarChart1').getContext('2d');
-  radar1 = makeRadar(ctx1);
+  radar1 = makeRadar(ctx1, false);
   updateCharts();
 });
 
@@ -119,6 +203,7 @@ function updateCharts() {
   const vals = getStatValues();
   chartColor = colorPicker.value;
   const fill = hexToRGBA(chartColor, 0.75);
+
   radar1.data.datasets[0].data = vals;
   radar1.data.datasets[0].backgroundColor = fill;
   radar1.data.datasets[0].borderColor = chartColor;
@@ -144,11 +229,18 @@ viewBtn.addEventListener('click', () => {
   document.getElementById('overlayName').textContent = document.getElementById('nameInput').value || '-';
   document.getElementById('overlayAbility').textContent = document.getElementById('abilityInput').value || '-';
   document.getElementById('overlayLevel').textContent = document.getElementById('levelInput').value || '-';
-  document.getElementById('subtleSignature').textContent = 'Chart made by Atlas Skies';
-
+  
+  // FIX: Watermark text should be hidden in a div within the text-box, not a separate element
+  document.getElementById('textWatermark').textContent = 'Chart website by Atlas Skies';
+  
   const ctx2 = document.getElementById('radarChart2').getContext('2d');
-  radar2?.destroy();
-  radar2 = makeRadar(ctx2, true, true);
+
+  if (radar2) {
+    radar2.destroy();
+  }
+
+  // Pass true for isOverlayChart
+  radar2 = makeRadar(ctx2, true);
   updateCharts();
 });
 
