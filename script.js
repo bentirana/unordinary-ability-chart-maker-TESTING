@@ -290,7 +290,7 @@ viewBtn.addEventListener('click', () => {
   overlayLevel.textContent = levelInput.value || '-';
   
   // NEW: Set the subtle signature text
-  subtleSignature.textContent = 'Chart made by Atlas Skies';
+  subtleSignature.textContent = 'Chart made by ' + (nameInput.value || 'Anonymous');
 
   setTimeout(() => {
     const img = document.getElementById('overlayImg');
