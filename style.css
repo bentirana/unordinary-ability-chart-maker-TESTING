@@ -6,6 +6,19 @@ body {
   align-items: flex-start;
   margin: 0;
   padding: 20px;
+  color: #333;
+}
+
+h1 {
+  font-style: italic;
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  font-style: italic;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 15px;
 }
 
 .container {
@@ -13,8 +26,8 @@ body {
   flex-wrap: wrap;
   justify-content: center;
   gap: 30px;
-  width: 100%;
   max-width: 1200px;
+  width: 100%;
 }
 
 .left {
@@ -51,6 +64,7 @@ input[type="number"], input[type="text"] {
   border-radius: 4px;
   border: 1px solid #ccc;
   padding: 4px;
+  font-family: Candara;
 }
 
 input[type="color"] {
@@ -67,6 +81,7 @@ button {
   border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
+  transition: all 0.2s;
 }
 
 button:hover {
@@ -77,6 +92,7 @@ button:hover {
 .chart-area {
   width: clamp(280px, 40vw, 500px);
   height: clamp(280px, 40vw, 500px);
+  background: none;
 }
 
 .overlay {
@@ -87,6 +103,7 @@ button:hover {
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 10;
 }
 
 .hidden { display: none; }
@@ -94,14 +111,15 @@ button:hover {
 .character-box {
   background: #fff;
   border-radius: 15px;
-  width: 52vw;
-  height: 64vh;
+  width: 60vw;
+  height: 70vh;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 40px;
   position: relative;
   padding: 20px;
+  overflow: hidden;
 }
 
 .close-btn {
@@ -114,21 +132,35 @@ button:hover {
   cursor: pointer;
 }
 
+.image-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
 .overlay-img {
-  width: 300px;
-  height: 300px;
-  border: 3px solid #493e3b;
+  width: 280px;
+  height: 280px;
+  border: 3px solid #184046;
   border-radius: 6px;
   object-fit: cover;
 }
 
 .text-box {
-  position: absolute;
-  bottom: -45px;
   background: white;
-  border: 3px solid #493e3b;
+  border: 3px solid #184046;
   padding: 10px;
-  text-align: center;
+  text-align: left;
+  margin-top: 10px;
+  width: 90%;
+  font-family: Candara;
+  font-size: 16px;
+}
+
+.text-box b {
+  font-weight: bold;
+  font-style: normal;
 }
 
 .overlay-chart {
@@ -142,4 +174,15 @@ button:hover {
   left: 20px;
   font-size: 8px;
   color: rgba(0,0,0,0.05);
+}
+
+#downloadBtn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: #92dfec;
+  border-radius: 5px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-weight: bold;
 }
