@@ -44,7 +44,7 @@ const radarBackgroundPlugin = {
     ctx.beginPath();
     ctx.strokeStyle = '#35727d'; // Darker spoke color
     ctx.lineWidth = 2; // Spoke thickness (increased to 2)
-
+    
     for (let i = 0; i < numPoints; i++) {
       const angle = (Math.PI / 2) - (i * 2 * Math.PI / numPoints);
       const x = cx + r.drawingArea * Math.cos(angle);
@@ -80,7 +80,8 @@ const outlinedLabelsPlugin = {
     
     // Custom offsets to adjust label positions (in radians)
     const powerOffset = 0;
-    const defenseOffset = 0.04; // Moves Defense slightly left
+    // Defense shifted further left (increased from 0.04 to 0.08)
+    const defenseOffset = 0.08; 
     const speedOffset = -0.04; // Moves Speed slightly right
     const offsets = [powerOffset, defenseOffset, speedOffset, 0, 0];
 
@@ -129,7 +130,7 @@ function makeRadar(ctx, stats, isEditable, showLabels, centerPoint) {
     labels: ['Power', 'Defense', 'Speed', 'Recovery', 'Trick'],
     datasets: [{
       data: stats || [5.0, 5.0, 5.0, 5.0, 5.0], // Default center stats for Chart 1
-      backgroundColor: `rgba(128, 128, 255, 0.65)`, // 65% opacity
+      backgroundColor: `${chartColor}A6`, // A6 is 65% opacity in hex
       borderColor: chartColor,
       borderWidth: 3,
       pointRadius: isEditable ? 5 : 0,
@@ -188,11 +189,13 @@ function updateChart() {
   chartColor = document.getElementById('colorPicker').value;
   currentStats = getStats();
   
-  radar1.data.datasets[0].data = currentStats;
-  radar1.data.datasets[0].borderColor = chartColor;
-  radar1.data.datasets[0].pointBackgroundColor = chartColor;
-  radar1.data.datasets[0].backgroundColor = `${chartColor}A6`; // A6 is 65% opacity in hex
-  radar1.update();
+  if (radar1) {
+    radar1.data.datasets[0].data = currentStats;
+    radar1.data.datasets[0].borderColor = chartColor;
+    radar1.data.datasets[0].pointBackgroundColor = chartColor;
+    radar1.data.datasets[0].backgroundColor = `${chartColor}A6`; // A6 is 65% opacity in hex
+    radar1.update();
+  }
 }
 
 function updateOverlayChart(stats, level, name, color) {
@@ -217,9 +220,8 @@ function updateOverlayChart(stats, level, name, color) {
   document.getElementById('overlayName').textContent = name;
   document.getElementById('overlayLevel').textContent = level;
   
-  // Update subtle signature
-  const signatureElement = document.getElementById('subtleSignature');
-  signatureElement.textContent = "Chart made by Atlas Skies";
+  // Update subtle signature (Hardcoded to Atlas Skies)
+  document.getElementById('subtleSignature').textContent = "Chart made by Atlas Skies";
 }
 
 /* === Event Handlers === */
@@ -242,6 +244,14 @@ statInputs.forEach(id => {
   document.getElementById(id).addEventListener('input', updateChart);
 });
 
+// Character Name Input Handler (Updates placeholder image text)
+document.getElementById('charName').addEventListener('input', (event) => {
+    const name = event.target.value || "Upload Image";
+    // Update placeholder image text dynamically
+    document.getElementById('uploadImg').src = `https://placehold.co/250x250/cccccc/333333?text=${name.replace(/\s/g, '+')}`;
+    updateChart(); // Also update chart if the name is an input that refreshes something
+});
+
 // View Chart Button Handler
 document.getElementById('viewChartBtn').addEventListener('click', () => {
   const name = document.getElementById('charName').value || "Unknown Character";
@@ -258,22 +268,15 @@ document.getElementById('closeBtn').addEventListener('click', () => {
   document.getElementById('overlay').classList.add('hidden');
 });
 
-// Download Handler
+// Download Handler (Simple and stable version)
 document.getElementById('downloadBtn').addEventListener('click', () => {
+  const canvas = document.getElementById('radarChart2');
   const name = document.getElementById('charName').value || "Unknown";
   const filename = `${name.replace(/\s/g, '_')}_characterChart.png`;
 
-  // Get the canvas for Chart 2
-  const canvas = document.getElementById('radarChart2');
-
-  // Create a temporary link element to trigger the download
   const link = document.createElement('a');
   link.download = filename;
-  
-  // Convert canvas content to image URL
   link.href = canvas.toDataURL('image/png');
-  
-  // Programmatically click the link
   link.click();
 });
 
