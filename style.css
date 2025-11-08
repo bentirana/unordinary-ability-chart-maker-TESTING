@@ -199,15 +199,9 @@ button:hover {
 
 /* ===== Text Box Under Image ===== */
 .text-box {
-  /* FIX: Move up 10px. Original bottom: -5% overlaps top 5% of box with image.
-          We need to calculate based on image height (320px) and box height (~70px).
-          -5% of 320px is 16px. Original bottom was 16px above the image bottom (320-16=304px).
-          To move it up 10px, we set the bottom position to 10px less, i.e., -10px from -16px. 
-          -16px + 10px = -6px. Let's use percentage relative to the image section for responsiveness.
-          -5% is 16px. -5% + (10px / 320px) * 100 = -5% + 3.125% = -1.875% 
-          Simpler: Use a fixed pixel offset: */
   position: absolute;
-  bottom: -6px; 
+  /* FIX: Moved down by 5 pixels (from -6px to -1px) */
+  bottom: -1px; 
   left: 50%;
   transform: translateX(-50%);
   background: white;
