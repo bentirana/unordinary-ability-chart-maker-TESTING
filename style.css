@@ -45,12 +45,11 @@ h1 {
   object-fit: cover;
 }
 
-/* FIX: New container for Name/Ability/Level inputs */
 .info-inputs-box {
     background-color: white;
     border-radius: 8px;
     padding: 10px 15px;
-    width: clamp(180px, 25vw, 250px); /* Matches image width */
+    width: clamp(180px, 25vw, 250px);
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     display: flex;
     flex-direction: column;
@@ -71,7 +70,6 @@ label {
   font-style: normal;
 }
 
-/* FIX: Stat labels are italic */
 .inputs label i {
     font-style: italic;
     font-weight: normal;
@@ -102,11 +100,33 @@ button {
   transition: all 0.2s;
   font-family: Candara;
   font-weight: normal;
+
+  /* Tooltip Container Setup */
+  position: relative;
 }
 
 button:hover {
   background-color: #6db5c0;
   color: white;
+}
+
+/* Tooltip Content Styling */
+button[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+
+    /* Styling */
+    background: #333;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 20;
+    margin-bottom: 5px;
 }
 
 .chart-area {
@@ -130,8 +150,8 @@ button:hover {
 .character-box {
   background: #fff;
   border-radius: 15px;
-  width: 60vw;
-  height: 70vh;
+  width: 65vw; /* Slightly wider to accommodate larger image/chart */
+  height: 80vh; /* Taller to accommodate larger image/chart */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -152,6 +172,7 @@ button:hover {
 }
 
 .image-section {
+  /* Use flex to handle dynamic centering of image and text box container */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -159,8 +180,9 @@ button:hover {
 }
 
 .overlay-img {
-  width: 280px;
-  height: 280px;
+  /* FIX: Larger image size */
+  width: 320px;
+  height: 320px;
   border: 3px solid #184046;
   border-radius: 6px;
   object-fit: cover;
@@ -170,17 +192,28 @@ button:hover {
   background: white;
   border: 3px solid #184046;
   padding: 10px;
-  text-align: center;
   width: 60%;
   margin-left: auto;
   margin-right: auto;
   font-family: Candara;
-  /* FIX: Larger text */
-  font-size: 18px; 
-  
-  /* FIX: Overlap image by 10% of image height (280px * 0.1 = 28px) */
+  font-size: 18px;
+
+  /* FIX: Overlap image by 5% (320px * 0.05 = 16px) */
   position: absolute;
-  bottom: -28px; 
+  bottom: -16px;
+  
+  /* FIX: Enable vertical centering of text content */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Container for Name/Ability/Level to ensure centering despite watermark */
+.text-content {
+    /* Must be absolute or relative to allow watermark to float over it */
+    position: relative; 
+    text-align: center;
 }
 
 .text-box p {
@@ -192,17 +225,22 @@ button:hover {
   font-style: normal;
 }
 
-/* FIX: Watermark opacity */
+/* FIX: Watermark styling (AS in bottom left, small, low opacity) */
 .text-watermark {
+    content: "AS";
+    position: absolute;
+    bottom: 0;
+    left: 5px;
     font-size: 10px;
     font-family: sans-serif;
-    color: rgba(0, 0, 0, 0.1); /* 10% opacity */
-    margin-top: 5px;
+    color: rgba(0, 0, 0, 0.05); /* 5% opacity */
+    pointer-events: none; /* Ignore clicks */
 }
 
 .overlay-chart {
-  width: clamp(280px, 40vw, 450px);
-  height: clamp(280px, 40vw, 450px);
+  /* Correspondingly larger chart area */
+  width: clamp(350px, 45vw, 550px);
+  height: clamp(350px, 45vw, 550px);
 }
 
 .subtle-signature {
