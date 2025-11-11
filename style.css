@@ -2,7 +2,7 @@
    GLOBAL STYLE
 =================== */
 body {
-  font-family: Candara, Optima, Avenir, "Avenir Next", "Gill Sans", "Helvetica Neue", Helvetica, sans-serif;
+  font-family: Candara, Verdana, Optima, Avenir, "Avenir Next", "Gill Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   background: #f0f8fc;
   display: flex;
   justify-content: center;
@@ -58,27 +58,38 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 6px;
 }
 
-/* ℹ️ Info Tooltip — Now works and shows below icon */
+/* ===========================
+   ℹ️ Info Tooltip (hover/tap)
+   - Hidden by default
+   - Appears BELOW the icon
+=========================== */
 .info-icon {
   position: relative;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   font-style: normal;
   font-size: 15px;
+  line-height: 1;
   color: #4e4e4e;
   transition: color 0.2s ease;
   user-select: none;
+  background: transparent;
+  border: none;
+  padding: 0 2px;
 }
 
 .info-icon:hover,
-.info-icon:focus-within {
+.info-icon.open {
   color: #8747e6;
 }
 
 .tooltip-text {
+  display: none;                /* hidden by default */
   visibility: hidden;
   opacity: 0;
   width: 260px;
@@ -89,7 +100,7 @@ h1 {
   padding: 8px;
   position: absolute;
   z-index: 100;
-  top: 130%; /* ⬇️ appears below icon */
+  top: 130%;                    /* show BELOW icon */
   left: 50%;
   transform: translateX(-50%);
   transition: opacity 0.25s ease-in-out;
@@ -97,12 +108,13 @@ h1 {
   line-height: 1.3;
   pointer-events: none;
   box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  white-space: normal;
 }
 
 .tooltip-text::after {
   content: "";
   position: absolute;
-  bottom: 100%; /* Arrow above bubble */
+  bottom: 100%; /* arrow sits above bubble */
   left: 50%;
   margin-left: -5px;
   border-width: 5px;
@@ -110,10 +122,20 @@ h1 {
   border-color: transparent transparent rgba(0,0,0,0.85) transparent;
 }
 
-.info-icon:hover .tooltip-text,
-.info-icon:focus-within .tooltip-text {
+/* Show on hover (desktop) */
+.info-icon:hover .tooltip-text {
+  display: block;
   visibility: visible;
   opacity: 1;
+  pointer-events: auto;
+}
+
+/* Show when toggled open (mobile tap) */
+.info-icon.open .tooltip-text {
+  display: block;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* ===================
@@ -274,7 +296,7 @@ button:hover {
   border-radius: 6px;
 }
 
-/* Watermark (AS) — semi-transparent and elegant */
+/* Watermark (AS) — semi-transparent */
 .img-watermark {
   position: absolute;
   bottom: 8px;
