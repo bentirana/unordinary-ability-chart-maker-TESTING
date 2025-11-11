@@ -1,8 +1,8 @@
 /* ===================
-   GLOBAL
+   GLOBAL STYLE
 =================== */
 body {
-  font-family: 'Carlito', Optima, Avenir, "Avenir Next", "Gill Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: Candara, Verdana, Optima, Avenir, "Avenir Next", "Gill Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   background: #f0f8fc;
   display: flex;
   justify-content: center;
@@ -12,7 +12,6 @@ body {
   color: #333;
 }
 
-/* ========== Layout ========== */
 .container {
   display: flex;
   flex-wrap: wrap;
@@ -31,7 +30,6 @@ body {
   min-width: 300px;
 }
 
-/* ========== Header & Tooltip ========== */
 .header-with-info {
   display: flex;
   align-items: center;
@@ -63,16 +61,23 @@ h1 {
   gap: 6px;
 }
 
-/* Tooltip icon and bubble */
+/* ===========================
+   ℹ️ Info Tooltip (hover/tap)
+   - Hidden by default
+   - Appears BELOW the icon
+=========================== */
 .info-icon {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  font-style: normal;
   font-size: 15px;
+  line-height: 1;
   color: #4e4e4e;
   transition: color 0.2s ease;
+  user-select: none;
   background: transparent;
   border: none;
   padding: 0 2px;
@@ -84,7 +89,7 @@ h1 {
 }
 
 .tooltip-text {
-  display: none;
+  display: none;                /* hidden by default */
   visibility: hidden;
   opacity: 0;
   width: 260px;
@@ -95,7 +100,7 @@ h1 {
   padding: 8px;
   position: absolute;
   z-index: 100;
-  top: 130%;
+  top: 130%;                    /* show BELOW icon */
   left: 50%;
   transform: translateX(-50%);
   transition: opacity 0.25s ease-in-out;
@@ -109,7 +114,7 @@ h1 {
 .tooltip-text::after {
   content: "";
   position: absolute;
-  bottom: 100%;
+  bottom: 100%; /* arrow sits above bubble */
   left: 50%;
   margin-left: -5px;
   border-width: 5px;
@@ -117,14 +122,25 @@ h1 {
   border-color: transparent transparent rgba(0,0,0,0.85) transparent;
 }
 
-.info-icon:hover .tooltip-text,
+/* Show on hover (desktop) */
+.info-icon:hover .tooltip-text {
+  display: block;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Show when toggled open (mobile tap) */
 .info-icon.open .tooltip-text {
   display: block;
   visibility: visible;
   opacity: 1;
+  pointer-events: auto;
 }
 
-/* ========== Inputs & Buttons ========== */
+/* ===================
+   UPLOAD + INPUTS
+=================== */
 .upload-img {
   width: clamp(180px, 25vw, 250px);
   height: clamp(180px, 25vw, 250px);
@@ -143,6 +159,13 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.info-box label {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  font-size: 15px;
 }
 
 .inputs {
@@ -176,6 +199,9 @@ input[type="color"] {
   cursor: pointer;
 }
 
+/* ===================
+   BUTTONS
+=================== */
 button {
   margin-top: 8px;
   padding: 6px 12px;
@@ -193,7 +219,9 @@ button:hover {
   color: white;
 }
 
-/* ========== Chart area & Overlay ========== */
+/* ===================
+   CHART AREA
+=================== */
 .chart-area {
   position: relative;
   width: clamp(300px, 40vw, 500px);
@@ -207,6 +235,9 @@ button:hover {
   align-items: center;
 }
 
+/* ===================
+   OVERLAY CHART
+=================== */
 .overlay {
   position: fixed;
   top: 0; left: 0;
@@ -243,7 +274,9 @@ button:hover {
   cursor: pointer;
 }
 
-/* ========== Image and Watermark ========== */
+/* ===================
+   IMAGE + WATERMARK
+=================== */
 .image-section {
   display: flex;
   flex-direction: column;
@@ -257,26 +290,28 @@ button:hover {
 }
 
 .overlay-img {
-  width: 300px;
-  height: 300px;
+  width: 300px; height: 300px;
   object-fit: cover;
   border: 3px solid #493e3b;
   border-radius: 6px;
 }
 
+/* Watermark (AS) — semi-transparent */
 .img-watermark {
   position: absolute;
   bottom: 8px;
   left: 10px;
   font-size: 12px;
   font-weight: bold;
-  color: rgba(0, 0, 0, 0.15); /* subtle watermark */
+  color: rgba(0, 0, 0, 0.15);
   user-select: none;
   pointer-events: none;
   letter-spacing: 1px;
 }
 
-/* ========== Text box and Download ========== */
+/* ===================
+   TEXT BOX + DOWNLOAD
+=================== */
 .text-box {
   position: absolute;
   bottom: -45px;
@@ -305,19 +340,18 @@ button:hover {
   font-weight: bold;
 }
 
+/* ===================
+   MOBILE
+=================== */
 @media (max-width: 768px) {
   .character-box {
     flex-direction: column;
-    width: 90vw;
-    max-height: 90vh;
-    padding: 15px;
-    gap: 20px;
+    width: 90vw; max-height: 90vh;
+    padding: 15px; gap: 20px;
     overflow-y: auto;
   }
 
   .overlay-img {
-    width: 70vw;
-    height: auto;
-    max-height: 35vh;
+    width: 70vw; height: auto; max-height: 35vh;
   }
 }
