@@ -317,6 +317,17 @@ button:hover {
   height: clamp(280px, 40vw, 450px);
 }
 
+.stat-label {
+    display: inline-block;
+    line-height: 1;
+    vertical-align: middle;
+}
+.stat-label span {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+
 #downloadBtn {
   position: absolute;
   bottom: 10px; right: 10px;
