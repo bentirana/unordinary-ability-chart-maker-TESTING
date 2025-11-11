@@ -96,7 +96,6 @@ h1 {
   gap: 5px;
 }
 
-/* Tooltip container for the "i" */
 .info-container {
   position: relative;
   display: inline-block;
@@ -115,7 +114,6 @@ h1 {
   color: #8747e6;
 }
 
-/* Tooltip content */
 .tooltip {
   position: absolute;
   top: 125%;
@@ -182,10 +180,11 @@ label {
   display: flex;
   justify-content: space-between;
   width: clamp(200px, 80%, 260px);
+  align-items: center;
 }
 
 input[type="number"], input[type="text"] {
-  width: 110px;
+  width: 90px;
   border-radius: 4px;
   border: 1px solid #ccc;
   padding: 4px;
@@ -195,8 +194,17 @@ input[type="number"], input[type="text"] {
 input[type="color"] {
   border: none;
   background: none;
-  width: 60px;
-  height: 40px;
+  width: 40px;
+  height: 30px;
+  cursor: pointer;
+}
+
+.axisColorPicker {
+  display: none;
+  margin-left: 8px;
+  width: 36px;
+  height: 28px;
+  border: none;
   cursor: pointer;
 }
 
@@ -221,13 +229,6 @@ button:hover {
   position: relative;
   width: clamp(300px, 40vw, 500px);
   height: clamp(300px, 40vw, 500px);
-}
-
-#axisColors {
-  display: none;
-  flex-direction: column;
-  gap: 4px;
-  align-items: center;
 }
 
 .overlay {
@@ -292,10 +293,11 @@ button:hover {
   left: 10px;
   font-size: 12px;
   font-weight: bold;
-  color: rgba(0, 0, 0, 0.05);
+  color: rgba(0, 0, 0, 0.08);
   user-select: none;
   pointer-events: none;
   letter-spacing: 1px;
+  font-family: 'Carlito';
 }
 
 .text-box {
